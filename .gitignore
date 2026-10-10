@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary uploaded files from Streamlit
+temp_uploaded.jpg
+
+# Large archives (Exceeds GitHub 100MB limit)
+*.zip
+*.tar.gz
+*.rar
+Hass Avocado Ripening Photographic Dataset.zip
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
