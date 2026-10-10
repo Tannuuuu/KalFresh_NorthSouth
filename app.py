@@ -1,13 +1,13 @@
 """
-app.py - Botanical Editorial Interface for Produce Quality & Pre-Visual Food Waste Mitigation
+app.py - Interactive Dashboard for Pre-Visual Food Waste Mitigation & Produce Quality Assessment
 
-Inspired by the classical sage-green botanical editorial design:
-- Elegant serif typography (Cormorant Garamond & Playfair Display)
-- Sage / celadon aesthetic palette (#8ea790) with crisp white typography
-- Interactive produce selection: Curated Editorial Art, Longitudinal Lifespan Gallery, or Custom Upload
-- Computer Vision Quality Grading (Grade A, B, C, Reject) & 0-100% Quality Score
+Features:
+- Botanical Sage Editorial Design Aesthetics (inspired by classical fine-art botanical design)
+- Produce analysis via Computer Vision (Colorimetric, Spatial Decay & Micro-Textural Biomarkers)
 - Pre-Visual Internal Degradation Spectral Heatmap
-- Remaining Shelf Life (RSL) & Dynamic FEFO Supply Chain Routing
+- Commercial Quality Grade (Grade A, B, C, Reject) & Quality Score (0-100%)
+- Remaining Shelf Life (RSL in Days) Prediction
+- Dynamic FEFO (First-Expired, First-Out) Supply Chain Routing Actions
 """
 
 import os
@@ -22,34 +22,29 @@ from features import extract_features, generate_degradation_heatmap, segment_fru
 from predict import predict, STAGE_METADATA
 
 st.set_page_config(
-    page_title="AVOCADO · Pre-Visual Quality & Shelf-Life Assessment",
+    page_title="KalFresh · Pre-Visual Quality & Shelf-Life Assessment",
     page_icon="🥑",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# Botanical Editorial CSS Theme
+# Sage-Green Botanical Editorial Design Aesthetics
 st.markdown("""
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Montserrat:wght@200;300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Montserrat:wght@200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
 <style>
-    /* Global Canvas Styling */
+    /* Global Background & Typography */
     .stApp {
         background-color: #8fa790 !important;
         background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0) !important;
-        background-size: 24px 24px !important;
+        background-size: 20px 20px !important;
         color: #ffffff !important;
         font-family: 'Cormorant Garamond', serif !important;
     }
     
-    /* Hide Default Header/Footer */
-    header, footer {
-        visibility: hidden !important;
-    }
-    
-    /* Typography Overrides */
+    /* Headers */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Playfair Display', serif !important;
         color: #ffffff !important;
@@ -60,103 +55,75 @@ st.markdown("""
         color: #f8faf7;
     }
 
-    /* Editorial Poster Grid Banner */
-    .editorial-hero {
-        position: relative;
-        padding: 30px 20px 20px 20px;
+    /* Top Editorial Header */
+    .editorial-header {
         text-align: center;
+        padding: 20px 0 15px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.25);
-        margin-bottom: 25px;
+        margin-bottom: 24px;
     }
     
-    .editorial-logo {
+    .editorial-title {
         font-family: 'Playfair Display', serif;
-        font-size: 4.5rem;
+        font-size: 3.2rem;
         font-weight: 700;
-        letter-spacing: 0.35em;
+        letter-spacing: 0.25em;
         color: #ffffff;
         text-transform: uppercase;
         margin: 0;
         line-height: 1.1;
-        text-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
     }
     
-    .editorial-sub {
+    .editorial-subtitle {
         font-family: 'Montserrat', sans-serif;
-        font-size: 0.85rem;
-        letter-spacing: 0.45em;
-        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.8rem;
+        letter-spacing: 0.35em;
+        color: rgba(255, 255, 255, 0.88);
         text-transform: uppercase;
         margin-top: 8px;
-        margin-bottom: 15px;
     }
 
-    .editorial-quote {
-        font-family: 'Cormorant Garamond', serif;
-        font-style: italic;
-        font-size: 1.15rem;
-        color: rgba(255, 255, 255, 0.9);
-        max-width: 680px;
-        margin: 0 auto;
-        line-height: 1.4;
+    /* Glassmorphism Editorial Cards */
+    .metric-card {
+        background: rgba(255, 255, 255, 0.16) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 14px !important;
+        padding: 18px 22px !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        box-shadow: 0 8px 28px rgba(35, 55, 38, 0.12) !important;
+        margin-bottom: 16px !important;
     }
 
-    /* Minimalist Dot Accents */
-    .dot-accent {
-        display: inline-block;
-        width: 7px;
-        height: 7px;
-        background-color: #ffffff;
-        margin: 0 6px;
-    }
-
-    /* Glassmorphic Editorial Cards */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.14);
-        border: 1px solid rgba(255, 255, 255, 0.28);
-        border-radius: 14px;
-        padding: 22px;
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        box-shadow: 0 8px 32px rgba(35, 55, 38, 0.15);
-        margin-bottom: 20px;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    .glass-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 36px rgba(35, 55, 38, 0.22);
-    }
-
-    /* Quality Grade Badges */
-    .grade-badge-a {
+    /* Commercial Quality Grade Badges */
+    .badge-grade-a {
         display: inline-block;
         background: #ffffff;
-        color: #3b5c3f;
+        color: #2e4d32;
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
         font-size: 0.9rem;
         letter-spacing: 0.15em;
-        padding: 8px 18px;
+        padding: 6px 16px;
         border-radius: 30px;
         text-transform: uppercase;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
     
-    .grade-badge-b {
+    .badge-grade-b {
         display: inline-block;
         background: #e2f1e4;
-        color: #2b5430;
+        color: #244829;
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
         font-size: 0.9rem;
         letter-spacing: 0.15em;
-        padding: 8px 18px;
+        padding: 6px 16px;
         border-radius: 30px;
         text-transform: uppercase;
     }
     
-    .grade-badge-c {
+    .badge-grade-c {
         display: inline-block;
         background: #fef3c7;
         color: #92400e;
@@ -164,12 +131,12 @@ st.markdown("""
         font-weight: 700;
         font-size: 0.9rem;
         letter-spacing: 0.15em;
-        padding: 8px 18px;
+        padding: 6px 16px;
         border-radius: 30px;
         text-transform: uppercase;
     }
     
-    .grade-badge-reject {
+    .badge-reject {
         display: inline-block;
         background: #fee2e2;
         color: #991b1b;
@@ -177,104 +144,57 @@ st.markdown("""
         font-weight: 700;
         font-size: 0.9rem;
         letter-spacing: 0.15em;
-        padding: 8px 18px;
+        padding: 6px 16px;
         border-radius: 30px;
         text-transform: uppercase;
     }
 
-    /* Metric Display Numbers */
-    .metric-hero-num {
-        font-family: 'Playfair Display', serif;
-        font-size: 3.2rem;
-        font-weight: 700;
-        line-height: 1;
-        color: #ffffff;
-        margin-bottom: 4px;
-    }
-
-    .metric-hero-label {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 0.72rem;
-        letter-spacing: 0.25em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.85);
-    }
-
-    /* Lifecycle Progress Bar */
-    .timeline-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 18px 0;
-        position: relative;
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #7d967e !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
     }
     
-    .timeline-step {
-        flex: 1;
-        text-align: center;
-        position: relative;
-    }
-    
-    .timeline-step .circle {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.25);
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 6px auto;
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 600;
-        font-size: 0.85rem;
-        border: 2px solid rgba(255, 255, 255, 0.6);
-    }
-    
-    .timeline-step.active .circle {
-        background: #ffffff;
-        color: #3b5c3f;
-        box-shadow: 0 0 16px rgba(255, 255, 255, 0.8);
-        border: 2px solid #ffffff;
-    }
-
-    .timeline-label {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 0.68rem;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.9);
-    }
-
-    /* Streamlit Widget Styling */
-    .stSelectbox, .stRadio, .stFileUploader {
+    section[data-testid="stSidebar"] * {
+        color: #ffffff !important;
         font-family: 'Montserrat', sans-serif !important;
     }
-    
-    div[data-baseweb="select"] {
-        background-color: rgba(255, 255, 255, 0.2) !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        border-radius: 10px !important;
-        color: white !important;
+
+    /* Custom Streamlit Metrics */
+    div[data-testid="stMetricValue"] {
+        font-family: 'Playfair Display', serif !important;
+        font-size: 2.2rem !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
     }
-    
-    div[data-baseweb="tab-list"] {
-        background-color: transparent !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.25) !important;
+
+    div[data-testid="stMetricLabel"] {
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 0.72rem !important;
+        letter-spacing: 0.2em !important;
+        text-transform: uppercase !important;
+        color: rgba(255, 255, 255, 0.85) !important;
     }
-    
+
+    /* Tabs Styling */
     button[data-baseweb="tab"] {
-        color: rgba(255, 255, 255, 0.75) !important;
         font-family: 'Montserrat', sans-serif !important;
         font-size: 0.8rem !important;
         letter-spacing: 0.15em !important;
         text-transform: uppercase !important;
+        color: rgba(255, 255, 255, 0.75) !important;
     }
-    
+
     button[aria-selected="true"] {
         color: #ffffff !important;
         border-bottom-color: #ffffff !important;
         font-weight: 600 !important;
+    }
+
+    /* DataFrame & Table Polish */
+    div[data-testid="stDataFrame"] {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -295,360 +215,203 @@ def load_sample_dataset():
     if not os.path.exists(excel_path):
         return []
     df = pd.read_excel(excel_path)
+    # Pick 2 representative samples per stage
     samples = []
-    # Curate one clear sample per maturity stage
-    for stage, stage_title in [
-        (1, "Stage 1: Underripe (Firm / Intact)"),
-        (2, "Stage 2: Breaking (Pre-Visual Softening)"),
-        (3, "Stage 3: Firm-Ripe (Early Edible)"),
-        (4, "Stage 4: Optimal Ripe (Ready-to-Eat)"),
-        (5, "Stage 5: Overripe (Senescent / Spoilage)")
-    ]:
+    for stage in [1, 2, 3, 4, 5]:
         sub = df[df['Ripening Index Classification'] == stage]
-        for _, row in sub.head(1).iterrows():
+        for _, row in sub.head(3).iterrows():
             img_path = os.path.join(data_dir, f"{row['File Name']}.jpg")
             if os.path.exists(img_path):
                 samples.append({
-                    "title": stage_title,
+                    "name": f"Stage {stage} - {row['File Name']}",
                     "path": img_path,
                     "stage": stage,
                     "day": row['Day of Experiment'],
-                    "group": row['Storage Group'],
-                    "filename": row['File Name']
+                    "group": row['Storage Group']
                 })
     return samples
 
 
 def main():
+    # Top Editorial Header
+    st.markdown("""
+    <div class="editorial-header">
+        <h1 class="editorial-title">AVOCADO</h1>
+        <div class="editorial-subtitle">Pre-Visual Quality Telemetry & Dynamic FEFO Waste Mitigation</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     bundle = load_model()
     if bundle is None:
         st.error("Trained model not found! Please run `python train.py` first to generate models/model_bundle.joblib.")
         st.stop()
 
     samples = load_sample_dataset()
-    ref_image_path = os.path.join(os.path.dirname(__file__), "assets", "editorial_avocado.jpg")
 
-    # --- TOP EDITORIAL POSTER HEADER ---
-    st.markdown("""
-    <div class="editorial-hero">
-        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 0 auto;">
-            <div style="font-family:'Playfair Display',serif; font-size: 2.4rem; font-weight:700;">A</div>
-            <div style="font-family:'Playfair Display',serif; font-size: 2.4rem; font-weight:700;">V</div>
-            <div><span class="dot-accent"></span><span class="dot-accent"></span></div>
-        </div>
-        <div class="editorial-logo">AVOCADO</div>
-        <div class="editorial-sub">Pre-Visual Food Waste Mitigation & Commercial Quality Telemetry</div>
-        <div class="editorial-quote">
-            "By the time human vision detects exocarp browning, internal enzymatic cell wall degradation has already occurred.
-            Computer vision captures the invisible spectrum—routing produce via dynamic FEFO before waste happens."
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin: 15px auto 0 auto;">
-            <div><span class="dot-accent"></span><span class="dot-accent"></span></div>
-            <div style="font-family:'Playfair Display',serif; font-size: 2.4rem; font-weight:700;">D</div>
-            <div style="font-family:'Playfair Display',serif; font-size: 2.4rem; font-weight:700;">O</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # --- INTERACTIVE CONTROL BAR ---
-    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([1.2, 1.2, 1.6])
-    
-    with ctrl_col1:
-        st.markdown("<p style='font-family:Montserrat,sans-serif; font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase;'>INSPECTION MODE</p>", unsafe_allow_html=True)
-        input_mode = st.radio(
-            "Mode Selection:",
-            ["Curated Botanical Artwork", "Longitudinal Fruit Lifespan", "Upload Custom Produce"],
-            label_visibility="collapsed"
-        )
+    # Sidebar: Produce Input Selection (Original functionality)
+    st.sidebar.markdown("### Produce Input")
+    input_mode = st.sidebar.radio("Select Image Source:", ["Sample Produce from Dataset", "Upload Custom Image"])
 
     selected_image_path = None
     input_image = None
-    sample_context = None
 
-    if input_mode == "Curated Botanical Artwork":
-        if os.path.exists(ref_image_path):
-            selected_image_path = ref_image_path
+    if input_mode == "Sample Produce from Dataset":
+        if samples:
+            sample_options = [s["name"] for s in samples]
+            selected_name = st.sidebar.selectbox("Choose a sample fruit:", sample_options, index=1)
+            selected_info = next(s for s in samples if s["name"] == selected_name)
+            selected_image_path = selected_info["path"]
             input_image = cv2.imread(selected_image_path)
-            sample_context = "Reference Botanical Artwork · Halved Hass Avocado with Seed"
+            st.sidebar.markdown(f"""
+            <div style="background:rgba(255,255,255,0.15); padding:10px; border-radius:8px; margin-top:10px; font-size:0.85rem;">
+                <b>Storage Condition:</b> {selected_info['group']}<br>
+                <b>Timeline:</b> Day {selected_info['day']} of experiment
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.warning("Reference artwork not found in assets.")
-
-    elif input_mode == "Longitudinal Fruit Lifespan":
-        with ctrl_col2:
-            st.markdown("<p style='font-family:Montserrat,sans-serif; font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase;'>SELECT MATURITY STAGE</p>", unsafe_allow_html=True)
-            stage_options = [s["title"] for s in samples]
-            chosen_title = st.selectbox("Stage:", stage_options, index=0, label_visibility="collapsed")
-            chosen_sample = next(s for s in samples if s["title"] == chosen_title)
-            selected_image_path = chosen_sample["path"]
-            input_image = cv2.imread(selected_image_path)
-            sample_context = f"{chosen_sample['title']} · Storage: {chosen_sample['group']} · Timeline: Day {chosen_sample['day']}"
-
+            st.sidebar.warning("Dataset images not found in default path.")
     else:
-        with ctrl_col2:
-            st.markdown("<p style='font-family:Montserrat,sans-serif; font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase;'>UPLOAD PHOTO</p>", unsafe_allow_html=True)
-            uploaded_file = st.file_uploader("Upload Produce Photo", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
-            if uploaded_file is not None:
-                file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-                input_image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-                sample_context = f"Custom Produce Upload · {uploaded_file.name}"
+        uploaded = st.sidebar.file_uploader("Upload Produce Photo (JPG/PNG)", type=["jpg", "jpeg", "png"])
+        if uploaded is not None:
+            file_bytes = np.asarray(bytearray(uploaded.read()), dtype=np.uint8)
+            input_image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
     if input_image is None:
-        st.info("Please select or upload a produce image to begin optical analysis.")
+        st.info("Please select or upload a produce image in the left sidebar to begin optical analysis.")
         return
 
     # Run Prediction Pipeline
     if selected_image_path:
-        res = predict(selected_image_path)
+        analysis_res = predict(selected_image_path)
     else:
         temp_path = os.path.join(os.path.dirname(__file__), "temp_uploaded.jpg")
         cv2.imwrite(temp_path, input_image)
-        res = predict(temp_path)
+        analysis_res = predict(temp_path)
 
-    with ctrl_col3:
-        st.markdown("<p style='font-family:Montserrat,sans-serif; font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase;'>SPECIMEN CONTEXT</p>", unsafe_allow_html=True)
-        st.markdown(f"""
-        <div style="background: rgba(255,255,255,0.12); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); font-family: 'Cormorant Garamond', serif; font-size: 1.05rem;">
-            {sample_context}
-        </div>
-        """, unsafe_allow_html=True)
+    # Main Dashboard Layout
+    col_left, col_right = st.columns([1.1, 1.4])
 
-    st.write("")
+    with col_left:
+        st.subheader("Visual vs. Pre-Visual Degradation Analysis")
+        tab_rgb, tab_heatmap, tab_mask = st.tabs(["Original RGB", "Pre-Visual Heatmap", "Segmented Exocarp"])
 
-    # --- MAIN STAGE LAYOUT: VISUAL INSPECTION (LEFT) & INTELLIGENCE (RIGHT) ---
-    col_visual, col_intel = st.columns([1.15, 1.45])
-
-    with col_visual:
-        st.markdown("""
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
-                <span style="font-family:'Montserrat',sans-serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase;">OPTICAL SURFACE INSPECTION</span>
-                <span style="font-family:'Cormorant Garamond',serif; font-style:italic; font-size: 0.95rem; color:rgba(255,255,255,0.85);">Multi-Spectral View</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-        tab_rgb, tab_heatmap, tab_mask = st.tabs(["Standard RGB", "Pre-Visual Heatmap", "Exocarp Segmentation"])
-
-        rgb_disp = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+        rgb_img = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
 
         with tab_rgb:
-            st.image(rgb_disp, caption="Human-Visible RGB Reflectance Spectrum", use_container_width=True)
-            st.markdown(f"<p style='font-size:0.95rem; color:rgba(255,255,255,0.9); font-style:italic;'><b>Surface Presentation:</b> {res['visual_appearance']}</p>", unsafe_allow_html=True)
+            st.image(rgb_img, caption="Standard Human-Visible RGB Inspection", use_container_width=True)
+            st.markdown(f"<p style='font-style:italic; font-size:0.95rem;'><b>Visible Surface State:</b> {analysis_res['visual_appearance']}</p>", unsafe_allow_html=True)
 
         with tab_heatmap:
-            heatmap_disp = generate_degradation_heatmap(input_image)
-            st.image(heatmap_disp, caption="Internal Chlorophyll Breakdown & a* Browning Shift Heatmap", use_container_width=True)
-            st.markdown("""
-            <div style="font-size:0.85rem; color:rgba(255,255,255,0.85); font-family:'Montserrat',sans-serif;">
-                🔵 <b>Deep Indigo/Cyan:</b> Intact high-turgor chloroplasts & cellular walls<br>
-                🔴 <b>Amber/Crimson:</b> Enzymatic softening & anthocyanin browning zones
-            </div>
-            """, unsafe_allow_html=True)
+            heatmap_img = generate_degradation_heatmap(input_image)
+            st.image(heatmap_img, caption="Spectral Pre-Visual Degradation Heatmap (a* Chromaticity & Chlorophyll Loss)", use_container_width=True)
+            st.caption("🔴 Red/Yellow: Internal enzymatic breakdown zones | 🔵 Blue/Green: Intact cellular tissue")
 
         with tab_mask:
-            mask_disp = segment_fruit(input_image)
-            st.image(mask_disp, caption="Adaptive Otsu Exocarp Foreground Isolation", use_container_width=True)
+            mask = segment_fruit(input_image)
+            st.image(mask, caption="Segmented Fruit Exocarp Mask (Background Cleared)", use_container_width=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    with col_right:
+        st.subheader("Quality & Shelf-Life Assessment")
 
-        # Micro-Nutrient & Botanical Note Block (from Reference Image)
-        st.markdown("""
-        <div class="glass-card" style="padding: 16px 20px;">
-            <p style="font-family:'Montserrat',sans-serif; font-size:0.7rem; letter-spacing:0.25em; text-transform:uppercase; margin-bottom:6px;">NUTRITIONAL & BIOPHYSICAL PROFILE</p>
-            <p style="font-size: 0.95rem; line-height: 1.45; color: rgba(255,255,255,0.9); margin-bottom: 0;">
-                Avocados are rich in monounsaturated oleic fatty acids, potassium, lutein, and vitamins C, E, K, and B-6.
-                As ripening advances, pectin methylesterase solubilizes middle lamella pectin, leading to rapid cell wall collapse.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col_intel:
-        # Commercial Quality Grade Card
-        tier_code = res.get("quality_tier_code", "GRADE_A")
-        badge_html_class = {
-            "GRADE_A": "grade-badge-a",
-            "GRADE_B": "grade-badge-b",
-            "GRADE_C": "grade-badge-c",
-            "REJECT": "grade-badge-reject"
-        }.get(tier_code, "grade-badge-a")
+        # Commercial Quality Grade Badge Header
+        tier_code = analysis_res.get("quality_tier_code", "GRADE_A")
+        badge_class = {
+            "GRADE_A": "badge-grade-a",
+            "GRADE_B": "badge-grade-b",
+            "GRADE_C": "badge-grade-c",
+            "REJECT": "badge-reject"
+        }.get(tier_code, "badge-grade-a")
 
         st.markdown(f"""
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <span class="{badge_html_class}">{res['quality_grade']}</span>
-                <span style="font-family:'Montserrat',sans-serif; font-size:0.75rem; letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.85);">
-                    MARKET VALUE: <b style="color:#ffffff;">{res['market_value_tier']}</b>
-                </span>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; text-align: center; padding: 10px 0;">
-                <div>
-                    <div class="metric-hero-num">{res['quality_score_pct']}%</div>
-                    <div class="metric-hero-label">Quality Score</div>
-                </div>
-                <div>
-                    <div class="metric-hero-num">{res['remaining_shelf_life_days']}d</div>
-                    <div class="metric-hero-label">Remaining Shelf Life</div>
-                </div>
-                <div>
-                    <div class="metric-hero-num">Stage {res['predicted_stage']}</div>
-                    <div class="metric-hero-label">Maturity Head</div>
-                </div>
-            </div>
-            <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 12px; margin-top: 10px;">
-                <p style="font-size: 1.05rem; margin-bottom: 4px;"><b>Internal Cellular State:</b> {res['internal_biological_state']}</p>
-                <p style="font-size: 0.95rem; font-style:italic; color: rgba(255,255,255,0.85); margin-bottom: 0;">{res['quality_summary']}</p>
-            </div>
+        <div style="margin-bottom: 16px;">
+            <span class="{badge_class}">{analysis_res['quality_grade']}</span>
+            <span style="margin-left: 14px; font-family:'Montserrat',sans-serif; font-size: 0.85rem; letter-spacing:0.15em; text-transform:uppercase; color: rgba(255,255,255,0.85);">
+                COMMERCIAL VALUE: <b style="color:#ffffff;">{analysis_res['market_value_tier']}</b>
+            </span>
         </div>
         """, unsafe_allow_html=True)
 
-        # Pre-Visual Warning / Spoilage Status Alert Box
-        if tier_code == "REJECT" or res['predicted_stage'] == 5:
-            st.markdown(f"""
-            <div class="glass-card" style="border-left: 5px solid #ef4444; background: rgba(239, 68, 68, 0.2);">
-                <div style="font-family:'Montserrat',sans-serif; font-size: 0.8rem; letter-spacing:0.15em; font-weight:700; color:#fecaca; text-transform:uppercase;">
-                    🛑 ADVANCED SENESCENCE / SPOILED
-                </div>
-                <p style="margin-top:6px; font-size:1.05rem; margin-bottom:0;">
-                    {res['pre_visual_alert']}. Exocarp collapse & vascular necrosis detected ({res['surface_decay_pct']}% peel damage). Unfit for retail sale.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-        elif res['is_pre_visual_degradation']:
-            st.markdown(f"""
-            <div class="glass-card" style="border-left: 5px solid #facc15; background: rgba(234, 179, 8, 0.2);">
-                <div style="font-family:'Montserrat',sans-serif; font-size: 0.8rem; letter-spacing:0.15em; font-weight:700; color:#fef08a; text-transform:uppercase;">
-                    ⚠️ PRE-VISUAL EARLY WARNING ALERT (12.5-DAY WINDOW)
-                </div>
-                <p style="margin-top:6px; font-size:1.05rem; margin-bottom:0;">
-                    Product appears green & intact to casual human inspection, but computer vision biomarkers detect accelerated chlorophyll breakdown. Proactive routing recommended.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-        elif res['predicted_stage'] == 4:
-            st.markdown(f"""
-            <div class="glass-card" style="border-left: 5px solid #f97316; background: rgba(249, 115, 22, 0.2);">
-                <div style="font-family:'Montserrat',sans-serif; font-size: 0.8rem; letter-spacing:0.15em; font-weight:700; color:#fed7aa; text-transform:uppercase;">
-                    ⏳ OPTIMAL RIPENESS · CRITICAL WINDOW
-                </div>
-                <p style="margin-top:6px; font-size:1.05rem; margin-bottom:0;">
-                    Peak organoleptic ready-to-eat condition. Consume or repurpose within 24–48 hours to prevent transition into unmarketable overripeness.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+        # Top Metric Cards
+        m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+        with m_col1:
+            q_score = analysis_res['quality_score_pct']
+            st.metric("Quality Score", f"{q_score}%", delta=f"{analysis_res['quality_tier_code']}")
+            st.caption("Commercial Rating")
+
+        with m_col2:
+            stage_num = analysis_res['predicted_stage']
+            stage_name = analysis_res['stage_name']
+            st.metric("Ripening Stage", f"Stage {stage_num}", delta=f"{analysis_res['confidence_pct']}% conf")
+            st.caption(f"{stage_name}")
+
+        with m_col3:
+            rsl = analysis_res['remaining_shelf_life_days']
+            st.metric("Remaining Shelf Life", f"{rsl} Days", delta="-1 day/24h" if rsl > 0 else "Expired")
+            st.caption("Until Stage 5 Spoilage")
+
+        with m_col4:
+            deg = analysis_res['internal_degradation_index_pct']
+            st.metric("Degradation Severity", f"{deg}%", delta="Cellular Breakdown")
+            st.caption("Internal Breakdown")
+
+        # Pre-Visual Spoilage Alert Banner
+        st.write("---")
+        if tier_code == "REJECT" or analysis_res['predicted_stage'] == 5:
+            st.error(f"🛑 **PRODUCT SPOILED / REJECT:** {analysis_res['quality_summary']}")
+        elif analysis_res['is_pre_visual_degradation']:
+            st.error(f"⚠️ **PRE-VISUAL SPOILAGE ALERT:**\n\n{analysis_res['pre_visual_alert']}")
+            st.warning("Product appears outwardly fresh/green to visual inspection, but computer vision detects accelerated internal cell wall breakdown.")
+        elif analysis_res['predicted_stage'] == 4 or tier_code == "GRADE_C":
+            st.warning(f"⏳ **PEAK RIPENESS / CRITICAL SHELF LIFE:** {analysis_res['pre_visual_alert']}")
         else:
-            st.markdown(f"""
-            <div class="glass-card" style="border-left: 5px solid #ffffff; background: rgba(255, 255, 255, 0.15);">
-                <div style="font-family:'Montserrat',sans-serif; font-size: 0.8rem; letter-spacing:0.15em; font-weight:700; color:#ffffff; text-transform:uppercase;">
-                    ✅ PRISTINE SHELF LIFE STABILITY
-                </div>
-                <p style="margin-top:6px; font-size:1.05rem; margin-bottom:0;">
-                    {res['pre_visual_alert']}. Full turgor pressure and intact exocarp. Standard retail inventory display.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.success(f"✅ **NORMAL STATUS:** {analysis_res['pre_visual_alert']}")
 
-        # Dynamic FEFO Inventory Routing Directive
-        fefo = res['fefo_recommendation']
+        # Dynamic FEFO Inventory Action Box
+        st.write("---")
+        st.subheader("Dynamic FEFO Supply Chain Routing")
+        fefo = analysis_res['fefo_recommendation']
+
         st.markdown(f"""
-        <div class="glass-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <span style="font-family:'Montserrat',sans-serif; font-size:0.75rem; letter-spacing:0.22em; text-transform:uppercase;">DYNAMIC FEFO ROUTING DIRECTIVE</span>
-                <span style="font-family:'Montserrat',sans-serif; font-weight:700; font-size:0.95rem; color:#ffffff; background:rgba(255,255,255,0.2); padding:3px 10px; border-radius:12px;">{fefo['discount_percent']}% Off</span>
-            </div>
-            <h3 style="font-size:1.6rem; margin: 4px 0 8px 0; color:#ffffff;">{fefo['tier']}</h3>
-            <p style="font-size:1.05rem; line-height:1.4; margin-bottom:10px;"><b>Execution Directive:</b> {fefo['action']}</p>
-            <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:10px; font-size:0.95rem; border-top:1px solid rgba(255,255,255,0.2); padding-top:10px;">
-                <div><b>Logistics Path:</b> {fefo['routing']}</div>
-                <div><b>Execution SLA:</b> <span style="font-family:'Montserrat',sans-serif; font-weight:600; color:#ffffff;">{fefo['urgency']}</span></div>
-            </div>
+        <div class="metric-card">
+            <h4 style="margin-top:0; font-family:'Playfair Display',serif; font-size:1.35rem; color: #ffffff;">📦 Action Tier: {fefo['tier']}</h4>
+            <p style="font-size:1.05rem; margin-bottom:6px;"><b>Recommended Directive:</b> {fefo['action']}</p>
+            <p style="font-size:1.05rem; margin-bottom:6px;"><b>Dynamic Pricing Markdown:</b> <span style="font-family:'Montserrat',sans-serif; font-size:1.15rem; color:#ffffff; font-weight:bold; background:rgba(255,255,255,0.2); padding:2px 10px; border-radius:10px;">{fefo['discount_percent']}% Off</span></p>
+            <p style="font-size:1.05rem; margin-bottom:6px;"><b>Logistics Routing:</b> {fefo['routing']}</p>
+            <p style="font-size:1.05rem; margin-bottom:0;"><b>Execution SLA:</b> <span style="font-family:'Montserrat',sans-serif; color:#ffffff; font-weight:bold;">{fefo['urgency']}</span></p>
         </div>
         """, unsafe_allow_html=True)
 
-        # Ripening Lifespan Timeline Tracker
-        cur_stage = res['predicted_stage']
-        s1_active = "active" if cur_stage == 1 else ""
-        s2_active = "active" if cur_stage == 2 else ""
-        s3_active = "active" if cur_stage == 3 else ""
-        s4_active = "active" if cur_stage == 4 else ""
-        s5_active = "active" if cur_stage == 5 else ""
-
-        st.markdown(f"""
-        <div class="glass-card" style="padding: 16px 20px;">
-            <div style="font-family:'Montserrat',sans-serif; font-size:0.72rem; letter-spacing:0.25em; text-transform:uppercase; margin-bottom:12px;">
-                BIOLOGICAL LIFECYCLE TRAJECTORY (26-DAY SCALE)
-            </div>
-            <div class="timeline-container">
-                <div class="timeline-step {s1_active}">
-                    <div class="circle">1</div>
-                    <div class="timeline-label">Underripe</div>
-                </div>
-                <div class="timeline-step {s2_active}">
-                    <div class="circle">2</div>
-                    <div class="timeline-label">Breaking</div>
-                </div>
-                <div class="timeline-step {s3_active}">
-                    <div class="circle">3</div>
-                    <div class="timeline-label">Firm-Ripe</div>
-                </div>
-                <div class="timeline-step {s4_active}">
-                    <div class="circle">4</div>
-                    <div class="timeline-label">Ready</div>
-                </div>
-                <div class="timeline-step {s5_active}">
-                    <div class="circle">5</div>
-                    <div class="timeline-label">Decayed</div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # --- BOTTOM SECTION: COMPUTER VISION TELEMETRY & SUPPLY CHAIN SIMULATION ---
-    st.write("")
+    # Bottom Section: CV Biomarkers and Waste Mitigation Impact
+    st.write("---")
     b_col1, b_col2 = st.columns(2)
 
     with b_col1:
-        st.markdown("""
-        <div class="glass-card">
-            <div style="font-family:'Montserrat',sans-serif; font-size:0.75rem; letter-spacing:0.25em; text-transform:uppercase; margin-bottom:14px;">
-                EXTRACTED BIOPHYSICAL COMPUTER VISION BIOMARKERS
-            </div>
-        """, unsafe_allow_html=True)
-        bio = res['cv_biomarkers']
-        bio_rows = [
-            ("CIE Lightness (L*)", str(bio["cie_lightness_L"]), "Calibrated surface reflectance & exocarp gloss"),
-            ("CIE Chromaticity (a*)", str(bio["cie_chromaticity_a"]), "Chlorophyll-to-anthocyanin red/brown shift"),
-            ("Perceptual Color Drift (ΔE)", str(bio["delta_e_color_drift"]), "Spectral distance from fresh Stage 1 baseline"),
-            ("Excess Green (ExG)", str(bio["excess_green_chlorophyll"]), "Chlorophyll concentration in outer fruit tissue"),
-            ("Excess Red (ExR)", str(bio["excess_red_browning"]), "Phenolic browning & pigment degradation"),
-            ("Browning Ratio", str(bio["browning_ratio"]), "Ratio of browning compounds to chlorophyll"),
-            ("Surface Necrosis Area", f"{res['surface_decay_pct']}%", "Localized peel browning/lesions percentage"),
-            ("Micro-Texture Energy", str(bio["texture_energy"]), "GLCM uniformity & nodulation smoothness"),
-            ("Surface Roughness", str(bio["surface_roughness_laplacian"]), "Laplacian micro-roughness & exocarp turgor loss")
-        ]
-        bio_df = pd.DataFrame(bio_rows, columns=["Biomarker", "Measured Value", "Biological Relevance"])
+        st.subheader("Computer Vision Biomarkers")
+        bio = analysis_res['cv_biomarkers']
+        bio_df = pd.DataFrame([
+            {"Biomarker": "CIE Lightness (L*)", "Value": bio["cie_lightness_L"], "Biological Relevance": "Tissue darkening & loss of exocarp gloss"},
+            {"Biomarker": "CIE Chromaticity (a*)", "Value": bio["cie_chromaticity_a"], "Biological Relevance": "Chlorophyll-to-anthocyanin transition"},
+            {"Biomarker": "Color Drift (ΔE)", "Value": bio["delta_e_color_drift"], "Biological Relevance": "Total spectral distance from fresh baseline"},
+            {"Biomarker": "Excess Green (ExG)", "Value": bio["excess_green_chlorophyll"], "Biological Relevance": "Chlorophyll density in outer cells"},
+            {"Biomarker": "Excess Red (ExR)", "Value": bio["excess_red_browning"], "Biological Relevance": "Phenolic browning / pigment decay"},
+            {"Biomarker": "Browning Ratio", "Value": bio["browning_ratio"], "Biological Relevance": "Relative browning vs chlorophyll balance"},
+            {"Biomarker": "Surface Necrosis", "Value": f"{analysis_res['surface_decay_pct']}%", "Biological Relevance": "Peel browning & necrotic lesions fraction"},
+            {"Biomarker": "Texture Energy", "Value": bio["texture_energy"], "Biological Relevance": "Exocarp uniformity & nodulation"},
+            {"Biomarker": "Surface Roughness", "Value": bio["surface_roughness_laplacian"], "Biological Relevance": "Peel turgor loss & microscopic wrinkling"}
+        ])
         st.dataframe(bio_df, hide_index=True, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with b_col2:
-        st.markdown("""
-        <div class="glass-card">
-            <div style="font-family:'Montserrat',sans-serif; font-size:0.75rem; letter-spacing:0.25em; text-transform:uppercase; margin-bottom:14px;">
-                SUPPLY CHAIN FOOD WASTE MITIGATION IMPACT (FIFO VS FEFO)
-            </div>
-        """, unsafe_allow_html=True)
-        waste_data = [
-            ("Retail Shrink / Spoilage Rate", "21.7% unmitigated shrink", "14.2% residual shrink", "Proactive early markdown rescue"),
-            ("Average Warning Lead Time", "0.0 days (reacts after rot)", "12.5 days advance notice", "Full window to discount or cook"),
-            ("Dynamic Rescue Rate", "0.0% (total loss)", "82.0% converted to sales", "Processed deli salads & flash markdown"),
-            ("Food Waste Mitigated", "Baseline (0%)", "34.4% LESS FOOD WASTE", "Dynamic First-Expired, First-Out")
-        ]
-        waste_df = pd.DataFrame(waste_data, columns=["Impact Metric", "Static FIFO (Standard)", "Dynamic FEFO (CV-Driven)", "Strategic Advantage"])
-        st.dataframe(waste_df, hide_index=True, use_container_width=True)
-        st.markdown("""
-            <p style="font-size:0.95rem; font-style:italic; color:rgba(255,255,255,0.85); margin-top:10px;">
-                💡 Detecting internal degradation up to 12.5 days before visual rot gives supply chains ample runway to route produce to store-front displays or in-store kitchens before shrinkage occurs.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.subheader("Supply Chain Waste Mitigation Impact")
+        st.write("Comparison of standard **FIFO (First-In, First-Out)** vs **Dynamic FEFO (First-Expired, First-Out)**:")
+
+        waste_df = pd.DataFrame({
+            "Metric": ["Retail Shrink / Spoilage Rate", "Avg Days Warning Before Spoilage", "Dynamic Rescue Rate", "Food Waste Reduction"],
+            "Static FIFO (Baseline)": ["21.7% throwaway", "0.0 days (reacts after visual rot)", "0.0%", "0% baseline"],
+            "Dynamic FEFO (CV-Driven)": ["14.2% residual", "12.5 days advance notice", "82.0% rescued", "34.4% LESS WASTE"]
+        })
+        st.table(waste_df)
+        st.caption("💡 By detecting internal degradation up to 12.5 days before visual rot, retailers can dynamically discount or repurpose fresh produce before it spoils.")
 
 
 if __name__ == "__main__":
