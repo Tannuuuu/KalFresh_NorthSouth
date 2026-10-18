@@ -84,6 +84,11 @@ def image_to_base64(img_bgr: np.ndarray) -> str:
     return base64.b64encode(buffer).decode('utf-8')
 
 
+def _sync_theme_mode():
+    """Keep the active theme in sync with the radio widget before rerun."""
+    st.session_state["theme_mode"] = st.session_state["theme_radio_selector"]
+
+
 def main():
     bundle = load_model()
     if bundle is None:
@@ -93,29 +98,30 @@ def main():
     samples = load_sample_dataset()
 
     # --- Reactive Theme Mode State Management ---
-    if 'theme_mode' not in st.session_state:
-        st.session_state['theme_mode'] = '🌙 Dark'
+    # Initialise both state keys before creating the widget. Streamlit's
+    # on_change callback updates theme_mode before the automatic rerun, so
+    # switching in either direction does not require a manual page refresh.
+    if "theme_mode" not in st.session_state:
+        st.session_state["theme_mode"] = "🌙 Dark"
+
+    if "theme_radio_selector" not in st.session_state:
+        st.session_state["theme_radio_selector"] = st.session_state["theme_mode"]
 
     top_col1, top_col2 = st.columns([3.8, 1.4])
     with top_col1:
         st.markdown("<p style='font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#22C55E; margin:6px 0 2px 0;'>KalFresh · Computer Vision AI Hackathon</p>", unsafe_allow_html=True)
 
     with top_col2:
-        current_idx = 0 if st.session_state['theme_mode'] == '🌙 Dark' else 1
-        theme_selection = st.radio(
+        st.radio(
             "Theme",
             options=["🌙 Dark", "☀️ Light"],
             horizontal=True,
-            index=current_idx,
             key="theme_radio_selector",
+            on_change=_sync_theme_mode,
             label_visibility="collapsed"
         )
 
-        if theme_selection != st.session_state['theme_mode']:
-            st.session_state['theme_mode'] = theme_selection
-            st.rerun()
-
-    is_dark = (st.session_state['theme_mode'] == "🌙 Dark")
+    is_dark = (st.session_state["theme_mode"] == "🌙 Dark")
 
     # Complete Design Tokens for Dark & Light
     if is_dark:
@@ -161,15 +167,36 @@ def main():
         btn_bg = "#16A34A"
         btn_hover = "#15803D"
 
-    # Inject Complete Theme CSS Overrides
+    # Inject theme-aware CSS. Keep selectors specific so nested Streamlit
+    # components do not inherit conflicting backgrounds or text colours.
     st.markdown(f"""
     <style>
-        /* Overall Page Background */
-        html, body, [class*="css"], .stApp {{
-            background-color: {bg_canvas} !important;
-            background: {bg_canvas} !important;
-            color: {text_primary} !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        :root {{
+            --app-bg: {bg_canvas};
+            --panel-bg: {panel_bg};
+            --panel-border: {panel_border};
+            --report-bg: {report_bg};
+            --report-border: {report_border};
+            --target-card-bg: {target_card_bg};
+            --target-card-border: {target_card_border};
+            --benefit-card-bg: {benefit_card_bg};
+            --benefit-card-border: {benefit_card_border};
+            --text-primary: {text_primary};
+            --text-secondary: {text_secondary};
+            --accent-green: {accent_green};
+            --input-bg: {input_bg};
+            --input-border: {input_border};
+            --button-bg: {btn_bg};
+            --button-hover: {btn_hover};
+        }}
+
+        /* App surfaces */
+        html, body, .stApp,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"] {{
+            background: var(--app-bg) !important;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }}
 
         .block-container {{
@@ -178,126 +205,149 @@ def main():
             max-width: 720px !important;
         }}
 
-        /* General text elements */
-        p, span, label, div {{
-            color: {text_primary};
+        /* Do not apply text colours to every span or div: that breaks widgets. */
+        .stApp [data-testid="stMarkdownContainer"] p,
+        .stApp [data-testid="stCaptionContainer"],
+        .stApp label,
+        .stApp [data-testid="stWidgetLabel"] p {{
+            color: var(--text-primary);
+        }}
+        .stApp [data-testid="stCaptionContainer"] {{
+            color: var(--text-secondary) !important;
         }}
 
-        /* Theme Selector Pill */
+        /* Theme selector */
         div[data-testid="stRadio"] {{
-            background-color: {panel_bg};
+            background: var(--panel-bg);
             padding: 4px 10px;
+            border: 1px solid var(--panel-border);
             border-radius: 9999px;
-            border: 1px solid {panel_border};
         }}
         div[data-testid="stRadio"] label,
         div[data-testid="stRadio"] label p,
-        div[data-testid="stRadio"] span {{
-            color: {text_primary} !important;
+        div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {{
+            color: var(--text-primary) !important;
             font-size: 13px !important;
             font-weight: 500 !important;
         }}
+        div[data-testid="stRadio"] input {{
+            accent-color: var(--accent-green);
+        }}
 
-        /* Expander Containers */
+        /* Expanders */
         div[data-testid="stExpander"] {{
-            background-color: {panel_bg} !important;
-            border: 1px solid {panel_border} !important;
+            background: var(--panel-bg) !important;
+            border: 1px solid var(--panel-border) !important;
             border-radius: 12px !important;
             margin-bottom: 18px !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,{'0.25' if is_dark else '0.04'}) !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, {'0.25' if is_dark else '0.04'}) !important;
         }}
-        div[data-testid="stExpander"] details {{
-            background-color: {panel_bg} !important;
-        }}
+        div[data-testid="stExpander"] details,
         div[data-testid="stExpander"] details summary {{
-            background-color: {panel_bg} !important;
-            color: {text_primary} !important;
+            background: var(--panel-bg) !important;
+            color: var(--text-primary) !important;
             border-radius: 12px !important;
         }}
         div[data-testid="stExpander"] details summary p,
         div[data-testid="stExpander"] details summary span,
         div[data-testid="stExpander"] details summary svg {{
-            color: {text_primary} !important;
-            fill: {text_primary} !important;
+            color: var(--text-primary) !important;
+            fill: var(--text-primary) !important;
             font-weight: 600 !important;
         }}
+        div[data-testid="stExpander"] [data-testid="stMarkdownContainer"] p {{
+            color: var(--text-primary);
+        }}
 
-        /* CRITICAL: Force Dark / Light on ALL Number Input subcomponents */
-        div[data-testid="stNumberInput"],
-        div[data-testid="stNumberInput"] > div,
+        /* Number inputs */
         div[data-testid="stNumberInput"] div[data-baseweb="input"],
-        div[data-testid="stNumberInput"] div[data-baseweb="base-input"],
+        div[data-testid="stNumberInput"] div[data-baseweb="base-input"] {{
+            background: var(--input-bg) !important;
+            border-color: var(--input-border) !important;
+        }}
         div[data-testid="stNumberInput"] input {{
-            background-color: {input_bg} !important;
-            background: {input_bg} !important;
-            color: {text_primary} !important;
-            border-color: {input_border} !important;
+            background: var(--input-bg) !important;
+            color: var(--text-primary) !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
+            border-color: var(--input-border) !important;
         }}
         div[data-testid="stNumberInput"] label p {{
-            color: {text_primary} !important;
+            color: var(--text-primary) !important;
             font-size: 13px !important;
             font-weight: 600 !important;
         }}
         div[data-testid="stNumberInput"] button {{
-            background-color: {input_bg} !important;
-            background: {input_bg} !important;
-            color: {text_primary} !important;
-            border-color: {input_border} !important;
+            background: var(--input-bg) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--input-border) !important;
         }}
         div[data-testid="stNumberInput"] button svg {{
-            fill: {text_primary} !important;
-            stroke: {text_primary} !important;
+            fill: var(--text-primary) !important;
+            stroke: var(--text-primary) !important;
         }}
 
-        /* CRITICAL: Force Dark / Light on ALL Selectbox subcomponents */
-        div[data-testid="stSelectbox"],
-        div[data-testid="stSelectbox"] > div,
-        div[data-testid="stSelectbox"] div[data-baseweb="select"],
-        div[data-testid="stSelectbox"] div[data-baseweb="select"] > div,
-        div[data-testid="stSelectbox"] div[data-baseweb="select"] * {{
-            background-color: {input_bg} !important;
-            background: {input_bg} !important;
-            color: {text_primary} !important;
-            border-color: {input_border} !important;
-        }}
+        /* Selectbox control: avoid wildcard styling of all descendants. */
         div[data-testid="stSelectbox"] label p {{
-            color: {text_primary} !important;
+            color: var(--text-primary) !important;
             font-size: 13px !important;
             font-weight: 600 !important;
         }}
-        div[data-baseweb="select"] svg {{
-            fill: {text_primary} !important;
+        div[data-testid="stSelectbox"] [data-baseweb="select"] > div {{
+            background: var(--input-bg) !important;
+            border-color: var(--input-border) !important;
+        }}
+        div[data-testid="stSelectbox"] [data-baseweb="select"] span,
+        div[data-testid="stSelectbox"] [data-baseweb="select"] input {{
+            color: var(--text-primary) !important;
+            -webkit-text-fill-color: var(--text-primary) !important;
+        }}
+        div[data-testid="stSelectbox"] [data-baseweb="select"] svg {{
+            fill: var(--text-secondary) !important;
+            color: var(--text-secondary) !important;
         }}
 
-        /* Dropdown popover menu */
-        ul[data-baseweb="menu"],
-        li[data-baseweb="menu-item"] {{
-            background-color: {panel_bg} !important;
-            color: {text_primary} !important;
+        /* Dropdown menus are rendered in a popover outside the selectbox. */
+        [data-baseweb="popover"],
+        [data-baseweb="popover"] ul[data-baseweb="menu"],
+        [data-baseweb="popover"] li[role="option"] {{
+            background: var(--panel-bg) !important;
+            color: var(--text-primary) !important;
+        }}
+        [data-baseweb="popover"] li[role="option"] * {{
+            color: var(--text-primary) !important;
+        }}
+        [data-baseweb="popover"] li[role="option"]:hover {{
+            background: var(--input-bg) !important;
         }}
 
-        /* File Uploader Dropzone */
+        /* File uploader */
         section[data-testid="stFileUploadDropzone"] {{
-            background-color: {input_bg} !important;
-            border: 1.5px dashed {input_border} !important;
+            background: var(--input-bg) !important;
+            border: 1.5px dashed var(--input-border) !important;
             border-radius: 10px !important;
             padding: 14px !important;
         }}
-        section[data-testid="stFileUploadDropzone"] * {{
-            color: {text_primary} !important;
+        section[data-testid="stFileUploadDropzone"] p,
+        section[data-testid="stFileUploadDropzone"] span,
+        section[data-testid="stFileUploadDropzone"] small,
+        section[data-testid="stFileUploadDropzone"] button {{
+            color: var(--text-primary) !important;
         }}
         div[data-testid="stFileUploaderFile"] {{
-            background-color: {target_card_bg} !important;
-            border: 1px solid {input_border} !important;
+            background: var(--target-card-bg) !important;
+            border: 1px solid var(--input-border) !important;
             border-radius: 8px !important;
         }}
-        div[data-testid="stFileUploaderFile"] * {{
-            color: {text_primary} !important;
+        div[data-testid="stFileUploaderFile"] p,
+        div[data-testid="stFileUploaderFile"] span,
+        div[data-testid="stFileUploaderFile"] svg {{
+            color: var(--text-primary) !important;
+            fill: var(--text-primary) !important;
         }}
 
-        /* Primary Action Button */
+        /* Buttons */
         div.stButton > button:first-child {{
-            background-color: {btn_bg} !important;
+            background: var(--button-bg) !important;
             color: #FFFFFF !important;
             height: 44px !important;
             border-radius: 8px !important;
@@ -305,25 +355,37 @@ def main():
             font-size: 15px !important;
             border: none !important;
             box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2) !important;
-            transition: all 0.2s ease !important;
+            transition: background-color 0.2s ease !important;
             width: 100% !important;
         }}
         div.stButton > button:first-child:hover {{
-            background-color: {btn_hover} !important;
+            background: var(--button-hover) !important;
+            color: #FFFFFF !important;
+        }}
+        div.stButton > button:first-child p {{
             color: #FFFFFF !important;
         }}
 
         /* Tabs */
         button[data-baseweb="tab"] {{
-            color: {text_secondary} !important;
+            color: var(--text-secondary) !important;
         }}
-        button[aria-selected="true"] {{
-            color: {accent_green} !important;
-            border-bottom-color: {accent_green} !important;
+        button[data-baseweb="tab"] p {{
+            color: inherit !important;
+        }}
+        button[data-baseweb="tab"][aria-selected="true"] {{
+            color: var(--accent-green) !important;
+            border-bottom-color: var(--accent-green) !important;
+        }}
+
+        /* Tables and dataframe surfaces */
+        div[data-testid="stDataFrame"],
+        div[data-testid="stTable"] {{
+            border-color: var(--panel-border) !important;
         }}
 
         header[data-testid="stHeader"] {{
-            background-color: transparent !important;
+            background: transparent !important;
         }}
     </style>
     """, unsafe_allow_html=True)
