@@ -93,13 +93,21 @@ def evaluate_system():
     qual_r2 = r2_score(y_test_qual, pred_qual)
 
     print("\n--- 2. REMAINING SHELF LIFE & QUALITY REGRESSION ---")
-    print(f"  RSL Mean Absolute Error:    {rsl_mae:.2f} days")
-    print(f"  RSL Root Mean Squared Error:{rsl_rmse:.2f} days")
-    print(f"  RSL R² Determination:       {rsl_r2:.4f}")
-    print(f"  Quality Score MAE:          {qual_mae:.2f}%")
-    print(f"  Quality Score R²:           {qual_r2:.4f}")
-    print(f"  Degradation Index MAE:      {deg_mae:.2f}%")
-    print(f"  Degradation Index R²:       {deg_r2:.4f}")
+    print(f"  Base RSL MAE (Image Only):  {rsl_mae:.2f} days (R² = {rsl_r2:.4f}, RMSE = {rsl_rmse:.2f}d)")
+
+    temp_rsl_reg = bundle.get('temp_rsl_reg', None)
+    if temp_rsl_reg is not None:
+        temp_map = {'T10': 10.0, 'T20': 20.0, 'Tam': 23.0}
+        test_df_temp = test_df.copy()
+        test_df_temp['storage_temp'] = test_df_temp['Storage Group'].map(temp_map)
+        feats_with_temp = FEATURE_NAMES + ['storage_temp']
+        pred_temp_rsl = np.clip(temp_rsl_reg.predict(test_df_temp[feats_with_temp]), 0, None)
+        temp_rsl_mae = mean_absolute_error(y_test_rsl, pred_temp_rsl)
+        temp_rsl_r2 = r2_score(y_test_rsl, pred_temp_rsl)
+        print(f"  Temp-Conditioned RSL MAE:   {temp_rsl_mae:.2f} days (R² = {temp_rsl_r2:.4f})")
+
+    print(f"  Quality Score MAE:          {qual_mae:.2f}% (R² = {qual_r2:.4f})")
+    print(f"  Degradation Index MAE:      {deg_mae:.2f}% (R² = {deg_r2:.4f})")
 
     # 3. Pre-Visual Early Detection Analysis (Crux of the Problem Statement)
     pre_visual_mask = y_test_stage.isin([1, 2])

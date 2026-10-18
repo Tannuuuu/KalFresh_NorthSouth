@@ -146,6 +146,31 @@ def train_models():
     qual_r2 = r2_score(y_test_qual, pred_qual)
     print(f"  -> Quality Score MAE:          {qual_mae:.2f}% (R2 = {qual_r2:.4f})")
 
+    # --- MODEL 5: Temperature-Conditioned Remaining Shelf Life Regressor ---
+    print("\n[5/5] Training Temperature-Conditioned Remaining Shelf Life Regressor...")
+    temp_map = {'T10': 10.0, 'T20': 20.0, 'Tam': 23.0}
+    train_df['storage_temp'] = train_df['Storage Group'].map(temp_map)
+    test_df['storage_temp'] = test_df['Storage Group'].map(temp_map)
+
+    feats_with_temp = FEATURE_NAMES + ['storage_temp']
+    temp_rsl_reg = LGBMRegressor(
+        n_estimators=250,
+        learning_rate=0.05,
+        num_leaves=35,
+        max_depth=8,
+        subsample=0.85,
+        colsample_bytree=0.85,
+        random_state=42,
+        verbosity=-1
+    )
+    temp_rsl_reg.fit(train_df[feats_with_temp], train_df['RSL'])
+    pred_temp_rsl = np.clip(temp_rsl_reg.predict(test_df[feats_with_temp]), 0, None)
+
+    temp_rsl_mae = mean_absolute_error(test_df['RSL'], pred_temp_rsl)
+    temp_rsl_rmse = np.sqrt(mean_squared_error(test_df['RSL'], pred_temp_rsl))
+    temp_rsl_r2 = r2_score(test_df['RSL'], pred_temp_rsl)
+    print(f"  -> Temp-Conditioned RSL MAE:   {temp_rsl_mae:.2f} days (R2 = {temp_rsl_r2:.4f})")
+
     # --- Feature Importance Analysis ---
     print("\n--- Key Computer Vision Biomarkers (Top 8 Feature Importances) ---")
     feat_imp = pd.Series(stage_clf.feature_importances_, index=FEATURE_NAMES).sort_values(ascending=False)
@@ -156,9 +181,11 @@ def train_models():
     bundle = {
         'stage_clf': stage_clf,
         'rsl_reg': rsl_reg,
+        'temp_rsl_reg': temp_rsl_reg,
         'deg_reg': deg_reg,
         'quality_reg': quality_reg,
         'feature_names': FEATURE_NAMES,
+        'feature_names_with_temp': feats_with_temp,
         'metrics': {
             'stage_accuracy': float(stage_acc),
             'stage_tol_accuracy': float(stage_tol_acc),
@@ -167,6 +194,9 @@ def train_models():
             'rsl_mae': float(rsl_mae),
             'rsl_rmse': float(rsl_rmse),
             'rsl_r2': float(rsl_r2),
+            'temp_rsl_mae': float(temp_rsl_mae),
+            'temp_rsl_rmse': float(temp_rsl_rmse),
+            'temp_rsl_r2': float(temp_rsl_r2),
             'deg_mae': float(deg_mae),
             'deg_r2': float(deg_r2),
             'quality_mae': float(qual_mae),

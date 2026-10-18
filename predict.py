@@ -129,9 +129,14 @@ def get_fefo_action(rsl_days: float, stage: int, quality_tier: str) -> dict:
         }
 
 
-def predict(image_path: str, model_bundle_path: str = MODEL_PATH) -> dict:
+def predict(
+    image_path: str,
+    model_bundle_path: str = MODEL_PATH,
+    temperature_c: float = 20.0,
+    humidity_pct: float = 65.0
+) -> dict:
     """
-    Run full prediction pipeline on a single image.
+    Run full prediction pipeline on a single image, conditioned on storage environment.
     """
     if not os.path.exists(model_bundle_path):
         raise FileNotFoundError(
@@ -141,6 +146,7 @@ def predict(image_path: str, model_bundle_path: str = MODEL_PATH) -> dict:
     bundle = joblib.load(model_bundle_path)
     stage_clf = bundle['stage_clf']
     rsl_reg = bundle['rsl_reg']
+    temp_rsl_reg = bundle.get('temp_rsl_reg', None)
     deg_reg = bundle['deg_reg']
     quality_reg = bundle.get('quality_reg', None)
 
@@ -153,7 +159,7 @@ def predict(image_path: str, model_bundle_path: str = MODEL_PATH) -> dict:
     stage_probs = stage_clf.predict_proba(feat_df)[0]
     stage_conf = float(np.max(stage_probs) * 100.0)
 
-    # Predict Remaining Shelf Life
+    # Base RSL
     pred_rsl = float(np.clip(rsl_reg.predict(feat_df)[0], 0.0, None))
 
     # Predict Internal Degradation Index
@@ -180,13 +186,70 @@ def predict(image_path: str, model_bundle_path: str = MODEL_PATH) -> dict:
         pred_qual = min(pred_qual, 30.0)
         pred_deg = max(pred_deg, 75.0)
 
+    # Storage-Conditioned RSL & Practical Recommendation
+    is_overripe = (pred_stage == 5) or (decay_pct >= 50.0) or (pred_qual <= 10.0)
+    rec_temp = 10.0  # Dataset T10 nominal cold storage temperature
+    rec_humidity = 85.0  # Dataset T10 nominal cold storage relative humidity
+
+    if is_overripe:
+        current_rsl = 0.0
+        recommended_rsl = 0.0
+        additional_days = 0.0
+        recommendation_note = (
+            "Produce has reached full senescence / decay (Stage 5). "
+            "Cold storage cannot reverse cellular breakdown or restore shelf life."
+        )
+    else:
+        if temp_rsl_reg is not None:
+            # 1. Recommended condition (10°C, supported by T10 group)
+            feat_rec = feat_df.copy()
+            feat_rec['storage_temp'] = rec_temp
+            recommended_rsl = float(np.clip(temp_rsl_reg.predict(feat_rec)[0], 0.0, None))
+
+            # 2. Current condition (at user temperature)
+            feat_curr = feat_df.copy()
+            clamped_temp = float(np.clip(temperature_c, 10.0, 23.0))
+            feat_curr['storage_temp'] = clamped_temp
+            base_temp_rsl = float(np.clip(temp_rsl_reg.predict(feat_curr)[0], 0.0, None))
+
+            # Biological Q10 kinetic adjustment if outside 10-23°C experimental range
+            if temperature_c > 23.0:
+                q10_factor = 2.0 ** ((temperature_c - 23.0) / 10.0)
+                current_rsl = max(0.5, base_temp_rsl / q10_factor)
+            elif temperature_c < 10.0:
+                current_rsl = base_temp_rsl * 1.10
+            else:
+                current_rsl = base_temp_rsl
+        else:
+            # Fallback scaling
+            current_rsl = pred_rsl * (2.0 ** (-(temperature_c - 15.0) / 10.0))
+            recommended_rsl = pred_rsl * (2.0 ** (-(rec_temp - 15.0) / 10.0))
+
+        current_rsl = round(float(np.clip(current_rsl, 0.0, 25.0)), 1)
+        recommended_rsl = round(float(np.clip(recommended_rsl, current_rsl, 25.0)), 1)
+        additional_days = round(max(0.0, recommended_rsl - current_rsl), 1)
+
+        if temperature_c <= 10.5:
+            recommendation_note = (
+                "Fruit is already stored at or below recommended cold-storage temperature (10°C). "
+                "No additional shelf-life extension is expected."
+            )
+            additional_days = 0.0
+        elif additional_days > 0:
+            recommendation_note = (
+                f"Transferring fruit from current {temperature_c:.1f}°C to recommended 10.0°C cold storage "
+                f"slows cellular respiration, extending estimated shelf life by +{additional_days:.1f} days."
+            )
+        else:
+            recommendation_note = "No additional shelf-life extension is expected at this ripening maturity."
+
     stage_info = STAGE_METADATA.get(pred_stage, {})
-    quality_info = compute_quality_grade(pred_stage, pred_rsl, pred_qual, decay_pct)
-    fefo_action = get_fefo_action(pred_rsl, pred_stage, quality_info['tier_code'])
+    quality_info = compute_quality_grade(pred_stage, current_rsl, pred_qual, decay_pct)
+    fefo_action = get_fefo_action(current_rsl, pred_stage, quality_info['tier_code'])
 
     # Pre-Visual Detection flag:
     # Triggered when produce looks outwardly fresh (Stage 1 or 2) but has internal degradation
-    is_pre_visual = (pred_stage in [1, 2]) and (pred_deg >= 22.0 or pred_rsl < 8.0)
+    is_pre_visual = (pred_stage in [1, 2]) and (pred_deg >= 22.0 or current_rsl < 8.0)
 
     result = {
         "image_path": image_path,
@@ -198,7 +261,7 @@ def predict(image_path: str, model_bundle_path: str = MODEL_PATH) -> dict:
         "quality_tier_code": quality_info["tier_code"],
         "quality_summary": quality_info["summary"],
         "market_value_tier": quality_info["market_value"],
-        "remaining_shelf_life_days": round(pred_rsl, 1),
+        "remaining_shelf_life_days": current_rsl,
         "internal_degradation_index_pct": round(pred_deg, 1),
         "surface_decay_pct": round(decay_pct, 1),
         "pre_visual_alert": stage_info.get("pre_visual_alert", ""),
@@ -206,6 +269,32 @@ def predict(image_path: str, model_bundle_path: str = MODEL_PATH) -> dict:
         "visual_appearance": stage_info.get("visual_appearance", ""),
         "internal_biological_state": stage_info.get("internal_state", ""),
         "fefo_recommendation": fefo_action,
+        "storage_analysis": {
+            "current_conditions": {
+                "temperature_c": round(float(temperature_c), 1),
+                "humidity_pct": round(float(humidity_pct), 1),
+                "estimated_rsl_days": current_rsl,
+                "is_out_of_dataset_range": bool(temperature_c < 10.0 or temperature_c > 23.0),
+                "range_explanation": (
+                    f"Current temperature ({temperature_c:.1f}°C) is outside the nominal experimental trial range (10°C–23°C); "
+                    f"decay rate is estimated using biological Q10 kinetics extrapolated from ambient."
+                    if (temperature_c < 10.0 or temperature_c > 23.0) else
+                    "Current temperature is within the validated empirical dataset range (10°C–23°C)."
+                )
+            },
+            "recommended_conditions": {
+                "temperature_c": rec_temp,
+                "humidity_pct": rec_humidity,
+                "estimated_rsl_days": recommended_rsl,
+                "additional_days_gained": additional_days,
+                "recommendation_summary": recommendation_note,
+                "humidity_guideline_note": (
+                    "Relative humidity (85% RH) is a recognized post-harvest commercial guideline to minimize fruit "
+                    "water loss and shriveling, rather than an independently model-optimized value (the dataset metadata "
+                    "does not independently vary RH)."
+                )
+            }
+        },
         "cv_biomarkers": {
             "cie_lightness_L": round(feats_dict['l_mean'], 1),
             "cie_chromaticity_a": round(feats_dict['a_mean'], 1),
@@ -227,6 +316,8 @@ def main():
     )
     parser.add_argument("--image", type=str, help="Path to input produce image")
     parser.add_argument("--sample", type=int, help="Sample avocado ID from dataset to test")
+    parser.add_argument("--temp", type=float, default=20.0, help="Current storage temperature in °C")
+    parser.add_argument("--humidity", type=float, default=65.0, help="Current relative humidity in %")
     parser.add_argument("--json", action="store_true", help="Output results in raw JSON format")
     args = parser.parse_args()
 
@@ -255,7 +346,7 @@ def main():
         print("Error: Please provide a valid image path via --image <path>.")
         sys.exit(1)
 
-    res = predict(image_path)
+    res = predict(image_path, temperature_c=args.temp, humidity_pct=args.humidity)
 
     if args.json:
         print(json.dumps(res, indent=2))
@@ -268,9 +359,19 @@ def main():
     print(f"Produce Quality:   {res['quality_grade']} (Score: {res['quality_score_pct']} / 100)")
     print(f"Commercial Value:  {res['market_value_tier']}")
     print(f"Ripening Stage:    Stage {res['predicted_stage']} - {res['stage_name']} ({res['confidence_pct']}% conf)")
-    print(f"Remaining Life:    {res['remaining_shelf_life_days']} DAYS remaining before spoilage")
+    print(f"Remaining Life:    {res['remaining_shelf_life_days']} DAYS (at {args.temp}°C, {args.humidity}% RH)")
     print(f"Degradation Index: {res['internal_degradation_index_pct']}% internal cellular breakdown")
     print(f"Surface Necrosis:  {res['surface_decay_pct']}% damaged/decaying peel")
+    print("-" * 68)
+    print(" STORAGE CONDITION & SHELF LIFE RECOMMENDATION:")
+    sa = res['storage_analysis']
+    curr = sa['current_conditions']
+    rec = sa['recommended_conditions']
+    print(f"  Current Storage:     {curr['temperature_c']}°C, {curr['humidity_pct']}% RH -> {curr['estimated_rsl_days']} Days Remaining")
+    print(f"  Recommended Storage: {rec['temperature_c']}°C, {rec['humidity_pct']}% RH -> {rec['estimated_rsl_days']} Days Remaining")
+    print(f"  Potential Benefit:   +{rec['additional_days_gained']} Additional Days of Shelf Life")
+    print(f"  Directive:           {rec['recommendation_summary']}")
+    print(f"  Humidity Note:       {rec['humidity_guideline_note']}")
     print("-" * 68)
     print(f"Quality Summary:   {res['quality_summary']}")
     print(f"Pre-Visual Alert:  {res['pre_visual_alert']}")
