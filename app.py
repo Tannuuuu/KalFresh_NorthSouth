@@ -5,8 +5,9 @@ IIT Bombay Computer Vision AI Hackathon
 
 Premium Food-Tech SaaS Interface:
 - Pure st.html rendering for custom cards: 100% immune to markdown code-block leaks
-- Color Palette: Warm off-white (#FAF9F5), Forest green (#1B4332, #2D6A4F), Soft sage (#52B788, #E8F0EA), Dark charcoal (#1F2421)
-- Seamless 3-tab segmented navigation: Analyze Freshness (default), Home, and About
+- Color Palette: Warm off-white (#FAF9F5), Forest green (#1B4332, #2D6A4F), Soft sage (#52B788, #E8F0EA), Crisp black (#111827)
+- Guaranteed 100% black text on all labels, radios, inputs, and widgets (fixes invisible white text issue)
+- Native top tabs for seamless, instant switching: Analyze Freshness, Home & Overview, and About & Architecture
 - Real ML pipeline: Multi-head LightGBM, 37 CV biomarkers, OpenCV degradation heatmap, FEFO routing
 - Fully cross-platform: In-memory cv2.imdecode with NumPy + OS-safe tempfile handling
 """
@@ -152,21 +153,21 @@ def apply_saas_styling():
         --kf-forest-light: #2D6A4F;
         --kf-sage: #52B788;
         --kf-sage-bg: #EEF4F0;
-        --kf-charcoal: #1F2421;
-        --kf-charcoal-muted: #5C655F;
+        --kf-text: #111827;
+        --kf-text-muted: #4B5563;
     }
 
     /* --- App Container & Background --- */
     .stApp {
         background-color: var(--kf-bg) !important;
         font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif !important;
-        color: var(--kf-charcoal) !important;
+        color: #111827 !important;
     }
 
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 3.5rem !important;
-        max-width: 1140px !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 3rem !important;
+        max-width: 1160px !important;
     }
 
     /* Remove default Streamlit header bar decoration */
@@ -174,46 +175,97 @@ def apply_saas_styling():
         background: transparent !important;
     }
 
-    /* --- Segmented Nav Controller --- */
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
-        background: #EEF4F0 !important;
-        padding: 4px !important;
-        border-radius: 9999px !important;
-        border: 1px solid #D8E8DC !important;
-        display: inline-flex !important;
-        gap: 4px !important;
-        align-items: center !important;
+    /* =========================================================================
+       CRITICAL: FORCE ALL LABELS, RADIOS & TEXTS TO SOLID BLACK (#111827)
+       Fixes visibility issues in dark/light mode mismatches
+       ========================================================================= */
+    .stApp p, .stApp span, .stApp label, .stApp div, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
+        color: #111827;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] label {
-        background: transparent !important;
-        padding: 6px 18px !important;
-        border-radius: 9999px !important;
+
+    /* Radio button texts: force solid black */
+    div[data-testid="stRadio"] label,
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stRadio"] label span,
+    div[data-testid="stRadio"] label div {
+        color: #111827 !important;
         font-weight: 600 !important;
-        font-size: 13px !important;
-        color: #2D6A4F !important;
-        cursor: pointer !important;
+        font-size: 14px !important;
+    }
+
+    /* Radio group container */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        background-color: #EEF4F0 !important;
+        padding: 6px 14px !important;
+        border-radius: 10px !important;
+        border: 1px solid #D8E8DC !important;
+        gap: 18px !important;
+    }
+
+    /* Widget Labels (Number inputs, selectboxes, uploaders) */
+    div[data-testid="stWidgetLabel"] label,
+    div[data-testid="stWidgetLabel"] label p,
+    div[data-testid="stWidgetLabel"] label span {
+        color: #111827 !important;
+        font-weight: 700 !important;
+        font-size: 14px !important;
+    }
+
+    /* Number inputs and Select boxes text */
+    div[data-baseweb="input"] input {
+        color: #111827 !important;
+        font-weight: 600 !important;
+    }
+    div[data-baseweb="select"] * {
+        color: #111827 !important;
+        font-weight: 600 !important;
+    }
+
+    /* --- Top Navigation Tabs Styling --- */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #EEF4F0 !important;
+        padding: 5px !important;
+        border-radius: 12px !important;
+        border: 1px solid #D8E8DC !important;
+        gap: 6px !important;
+        margin-bottom: 22px !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background-color: transparent !important;
+        border-radius: 8px !important;
         border: none !important;
+        padding: 9px 20px !important;
         transition: all 0.2s ease !important;
-        margin: 0 !important;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.7) !important;
-        color: #1B4332 !important;
+
+    .stTabs [data-baseweb="tab"] p,
+    .stTabs [data-baseweb="tab"] span,
+    .stTabs [data-baseweb="tab"] div {
+        color: #111827 !important;
+        font-weight: 700 !important;
+        font-size: 14px !important;
     }
-    div[data-testid="stRadio"] > div[role="radiogroup"] label[data-checked="true"],
-    div[data-testid="stRadio"] > div[role="radiogroup"] div[aria-checked="true"] {
-        background: #1B4332 !important;
+
+    .stTabs [data-baseweb="tab"]:hover {
+        background-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #1B4332 !important;
+        box-shadow: 0 2px 8px rgba(27, 67, 50, 0.22) !important;
+    }
+
+    .stTabs [aria-selected="true"] p,
+    .stTabs [aria-selected="true"] span,
+    .stTabs [aria-selected="true"] div {
         color: #FFFFFF !important;
-        box-shadow: 0 2px 8px rgba(27, 67, 50, 0.18) !important;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] label span {
-        color: inherit !important;
     }
 
     /* --- Buttons --- */
     div.stButton > button {
         border-radius: 12px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         font-size: 15px !important;
         padding: 10px 22px !important;
         transition: all 0.2s ease !important;
@@ -231,13 +283,14 @@ def apply_saas_styling():
     }
     div.stButton > button[kind="secondary"], div.stButton > button[data-testid="baseButton-secondary"] {
         background-color: #FFFFFF !important;
-        color: #1B4332 !important;
-        border: 1px solid #E8EBE4 !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
+        color: #111827 !important;
+        border: 1px solid #D1D5DB !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
     }
     div.stButton > button[kind="secondary"]:hover, div.stButton > button[data-testid="baseButton-secondary"]:hover {
         background-color: #EEF4F0 !important;
         border-color: #52B788 !important;
+        color: #1B4332 !important;
     }
 
     /* --- File Uploader --- */
@@ -251,22 +304,8 @@ def apply_saas_styling():
         border-color: #52B788 !important;
         background-color: #FAFCFA !important;
     }
-
-    /* --- Tabs --- */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px !important;
-        border-bottom: 1px solid #E8EBE4 !important;
-    }
-    .stTabs [data-baseweb="tab"] {
-        font-weight: 600 !important;
-        font-size: 14px !important;
-        color: #5C655F !important;
-        border-radius: 8px !important;
-        padding: 8px 16px !important;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #EEF4F0 !important;
-        color: #1B4332 !important;
+    div[data-testid="stFileUploader"] section * {
+        color: #111827 !important;
     }
     </style>
     """)
@@ -276,106 +315,40 @@ def apply_saas_styling():
 # HEADER COMPONENT
 # =============================================================================
 def render_header():
-    """Renders the top branding header and segmented navigation bar."""
-    if "nav_page" not in st.session_state:
-        st.session_state["nav_page"] = "Analyze Freshness"
-
-    top_c1, top_c2 = st.columns([1.5, 1.2])
-    with top_c1:
-        st.html("""
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+    """Renders the top branding header."""
+    st.html("""
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
             <div style="width:42px; height:42px; background:#EEF4F0; border:1px solid #D8E8DC; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 2px 8px rgba(27,67,50,0.06);">
                 🥑
             </div>
             <div>
                 <div style="font-size:22px; font-weight:800; letter-spacing:-0.02em; color:#1B4332; line-height:1.1;">KalFresh</div>
-                <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#5C655F;">AI-Powered Freshness Intelligence</div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#4B5563;">AI-Powered Freshness Intelligence</div>
             </div>
         </div>
-        """)
-
-    with top_c2:
-        nav_options = ["Analyze Freshness", "Home", "About"]
-        current_idx = nav_options.index(st.session_state["nav_page"]) if st.session_state["nav_page"] in nav_options else 0
-        selected_nav = st.radio(
-            "Navigation Menu",
-            nav_options,
-            horizontal=True,
-            label_visibility="collapsed",
-            key="nav_radio_widget",
-            index=current_idx
-        )
-        if selected_nav != st.session_state["nav_page"]:
-            st.session_state["nav_page"] = selected_nav
-            st.rerun()
-
-
-# =============================================================================
-# HERO SECTION (Home Page)
-# =============================================================================
-def render_hero_section():
-    """Renders the Hero Section explaining KalFresh's mission."""
-    st.html("""
-    <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:20px; padding:40px 36px; box-shadow:0 4px 20px rgba(20,54,40,0.04); margin-bottom:24px;">
-        <div style="display:inline-flex; align-items:center; gap:8px; background:#EEF4F0; border:1px solid #D8E8DC; border-radius:9999px; padding:4px 14px; font-size:12px; font-weight:700; color:#1B4332; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:18px;">
-            <span style="display:inline-block; width:8px; height:8px; background:#52B788; border-radius:50%;"></span>
-            IIT Bombay Computer Vision AI Hackathon
-        </div>
-        <h1 style="font-size:38px; font-weight:800; color:#1B4332; line-height:1.2; letter-spacing:-0.025em; margin-bottom:14px;">
-            Know Your Fruit.<br/>Reduce Food Waste.
-        </h1>
-        <p style="font-size:16px; line-height:1.6; color:#4A5568; max-width:700px; margin-bottom:28px;">
-            KalFresh inspects produce non-destructively through optical computer vision and biological degradation kinetics. Detect pre-visual softening, quantify remaining shelf life, and dynamically route commercial inventory before edible quality is lost.
-        </p>
-
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
-            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:12px; padding:16px 18px;">
-                <div style="font-size:12px; font-weight:600; color:#5C655F; margin-bottom:4px;">Produce Category</div>
-                <div style="font-size:16px; font-weight:700; color:#1B4332;">Hass Avocado</div>
-                <div style="font-size:12px; color:#8A948E;">Persea americana</div>
-            </div>
-            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:12px; padding:16px 18px;">
-                <div style="font-size:12px; font-weight:600; color:#5C655F; margin-bottom:4px;">Spectral Biomarkers</div>
-                <div style="font-size:16px; font-weight:700; color:#1B4332;">37 Optical Features</div>
-                <div style="font-size:12px; color:#8A948E;">CIE L*a*b*, GLCM, Chlorophyll</div>
-            </div>
-            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:12px; padding:16px 18px;">
-                <div style="font-size:12px; font-weight:600; color:#5C655F; margin-bottom:4px;">Pre-Visual Detection</div>
-                <div style="font-size:16px; font-weight:700; color:#1B4332;">Zero-Day Latency</div>
-                <div style="font-size:12px; color:#8A948E;">Before outward browning</div>
-            </div>
-            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:12px; padding:16px 18px;">
-                <div style="font-size:12px; font-weight:600; color:#5C655F; margin-bottom:4px;">Storage Kinetic Gain</div>
-                <div style="font-size:16px; font-weight:700; color:#1B4332;">+10+ Days Life</div>
-                <div style="font-size:12px; color:#8A948E;">Dynamic FEFO Inventory Action</div>
-            </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-flex; align-items:center; gap:6px; background:#EEF4F0; border:1px solid #D8E8DC; border-radius:9999px; padding:4px 14px; font-size:12px; font-weight:700; color:#1B4332;">
+                <span style="display:inline-block; width:8px; height:8px; background:#52B788; border-radius:50%;"></span>
+                IIT Bombay AI Hackathon
+            </span>
         </div>
     </div>
     """)
 
-    c_btn1, c_btn2, _ = st.columns([1.3, 1.3, 1.8])
-    with c_btn1:
-        if st.button("Start Freshness Analysis →", type="primary", use_container_width=True):
-            st.session_state["nav_page"] = "Analyze Freshness"
-            st.rerun()
-    with c_btn2:
-        if st.button("Learn Technical Architecture", type="secondary", use_container_width=True):
-            st.session_state["nav_page"] = "About"
-            st.rerun()
-
 
 # =============================================================================
-# IMAGE UPLOAD & PREDICTION WORKFLOW (Main Dashboard)
+# TAB 1: ANALYZE FRESHNESS (Main Prediction Studio)
 # =============================================================================
 def render_analysis_section(bundle, samples):
     """Renders the image upload area, storage microclimates, and full results dashboard."""
 
     st.html("""
-    <div style="margin-bottom:18px;">
-        <h2 style="font-size:24px; font-weight:800; color:#1B4332; margin-bottom:4px; letter-spacing:-0.02em;">
-            Produce Freshness & Shelf-Life Assessment
+    <div style="margin-bottom:16px;">
+        <h2 style="font-size:22px; font-weight:800; color:#1B4332; margin-bottom:4px; letter-spacing:-0.02em;">
+            Produce Freshness & Shelf-Life Assessment Studio
         </h2>
-        <p style="font-size:14px; color:#5C655F; margin:0;">
+        <p style="font-size:14px; color:#4B5563; margin:0;">
             Upload an avocado photograph or choose from our pre-validated sample library to evaluate ripening stage, quality grade, and storage extension potential.
         </p>
     </div>
@@ -385,7 +358,7 @@ def render_analysis_section(bundle, samples):
     col_img_in, col_env_in = st.columns([1.2, 1.0], gap="large")
 
     with col_img_in:
-        st.html("<div style='font-size:14px; font-weight:700; color:#1B4332; margin-bottom:8px;'>1. Select Produce Image</div>")
+        st.html("<div style='font-size:14px; font-weight:700; color:#111827; margin-bottom:8px;'>1. Select Produce Image</div>")
         src_tab = st.radio(
             "Image Source Mode",
             ["Choose from Sample Library", "Upload Custom Photograph"],
@@ -415,7 +388,7 @@ def render_analysis_section(bundle, samples):
                 st.info("No sample images detected. Please upload an image.")
 
     with col_env_in:
-        st.html("<div style='font-size:14px; font-weight:700; color:#1B4332; margin-bottom:8px;'>2. Configure Storage Microclimate</div>")
+        st.html("<div style='font-size:14px; font-weight:700; color:#111827; margin-bottom:8px;'>2. Configure Storage Microclimate</div>")
         user_temp = st.number_input(
             "Storage Temperature (°C)",
             min_value=-5.0,
@@ -540,7 +513,7 @@ def render_analysis_section(bundle, samples):
                     <span style="background:{stage_cfg['badge_bg']}; color:{stage_cfg['color']}; border:1px solid {stage_cfg['color']}33; font-size:12px; font-weight:700; padding:3px 12px; border-radius:9999px;">
                         Stage {active_stage} · {stage_cfg['name']}
                     </span>
-                    <span style="background:#FAF9F5; color:#5C655F; border:1px solid #E8EBE4; font-size:12px; font-weight:600; padding:3px 12px; border-radius:9999px;">
+                    <span style="background:#FAF9F5; color:#111827; border:1px solid #E8EBE4; font-size:12px; font-weight:700; padding:3px 12px; border-radius:9999px;">
                         {conf_val}% Confidence
                     </span>
                     <span style="background:#EEF4F0; color:#1B4332; border:1px solid #D8E8DC; font-size:12px; font-weight:700; padding:3px 12px; border-radius:9999px;">
@@ -548,9 +521,9 @@ def render_analysis_section(bundle, samples):
                     </span>
                 </div>
                 <div style="font-size:22px; font-weight:800; color:#1B4332; letter-spacing:-0.02em; margin-bottom:4px;">
-                    Hass Avocado <span style="font-size:14px; font-weight:500; color:#5C655F; font-style:italic;">(Persea americana)</span>
+                    Hass Avocado <span style="font-size:14px; font-weight:500; color:#4B5563; font-style:italic;">(Persea americana)</span>
                 </div>
-                <div style="font-size:13px; color:#5C655F;">
+                <div style="font-size:13px; color:#4B5563;">
                     Inspected under current storage environment ({curr['temperature_c']}°C, {curr['humidity_pct']}% RH)
                 </div>
             </div>
@@ -564,8 +537,8 @@ def render_analysis_section(bundle, samples):
             <!-- Metric 1: Freshness -->
             <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:14px; padding:18px 22px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#5C655F;">Freshness Index</span>
-                    <span style="font-size:12px; font-weight:600; color:#1B4332; background:#E8F0EA; padding:2px 8px; border-radius:6px;">{stage_cfg['name']}</span>
+                    <span style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#4B5563;">Freshness Index</span>
+                    <span style="font-size:12px; font-weight:700; color:#1B4332; background:#E8F0EA; padding:2px 8px; border-radius:6px;">{stage_cfg['name']}</span>
                 </div>
                 <div style="font-size:40px; font-weight:800; color:#1B4332; line-height:1.1; margin-bottom:8px;">
                     {freshness_val}%
@@ -574,7 +547,7 @@ def render_analysis_section(bundle, samples):
                 <div style="width:100%; height:8px; background:#E8EBE4; border-radius:9999px; overflow:hidden; margin-bottom:8px;">
                     <div style="width:{freshness_val}%; height:100%; background:linear-gradient(90deg, #52B788, #1B4332); border-radius:9999px;"></div>
                 </div>
-                <div style="font-size:12px; color:#5C655F;">
+                <div style="font-size:12px; color:#4B5563;">
                     Calibrated produce quality score matching USDA ripening standards.
                 </div>
             </div>
@@ -582,16 +555,16 @@ def render_analysis_section(bundle, samples):
             <!-- Metric 2: Remaining Shelf Life -->
             <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:14px; padding:18px 22px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                    <span style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#5C655F;">Remaining Shelf Life</span>
-                    <span style="font-size:12px; font-weight:600; color:#2D6A4F; background:#E8F0EA; padding:2px 8px; border-radius:6px;">Current Climate</span>
+                    <span style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#4B5563;">Remaining Shelf Life</span>
+                    <span style="font-size:12px; font-weight:700; color:#2D6A4F; background:#E8F0EA; padding:2px 8px; border-radius:6px;">Current Climate</span>
                 </div>
-                <div style="font-size:40px; font-weight:800; color:#1B4332; line-height:1.1; margin-bottom:8px;">
-                    {days_val} <span style="font-size:20px; font-weight:600; color:#5C655F;">days</span>
+                <div style="font-size:40px; font-weight:800; color:#111827; line-height:1.1; margin-bottom:8px;">
+                    {days_val} <span style="font-size:20px; font-weight:600; color:#4B5563;">days</span>
                 </div>
-                <div style="font-size:12px; font-weight:600; color:#1B4332; margin-bottom:4px;">
+                <div style="font-size:12px; font-weight:700; color:#1B4332; margin-bottom:4px;">
                     Commercial Valuation: {market_value}
                 </div>
-                <div style="font-size:12px; color:#5C655F;">
+                <div style="font-size:12px; color:#4B5563;">
                     Estimated longitudinal days until Stage 5 senescent breakdown at {curr['temperature_c']}°C.
                 </div>
             </div>
@@ -635,23 +608,23 @@ def render_analysis_section(bundle, samples):
         <div style="font-size:17px; font-weight:800; color:#1B4332; margin-bottom:4px; letter-spacing:-0.01em;">
             Storage Microclimate & Shelf-Life Optimization
         </div>
-        <p style="font-size:13px; color:#5C655F; margin-bottom:18px;">
+        <p style="font-size:13px; color:#4B5563; margin-bottom:18px;">
             Produce respiration kinetics scale exponentially with storage temperature according to Van 't Hoff's biological Q10 model.
         </p>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:16px; margin-bottom:18px;">
             <!-- Current Microclimate -->
             <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:12px; padding:16px 18px;">
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#5C655F; margin-bottom:6px;">Current Environment</div>
-                <div style="font-size:20px; font-weight:800; color:#1B4332; margin-bottom:2px;">{curr['temperature_c']}°C <span style="font-size:14px; font-weight:500; color:#5C655F;">/ {curr['humidity_pct']}% RH</span></div>
-                <div style="font-size:12px; color:#5C655F;">Estimated Life: <b>{days_val} days</b></div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#4B5563; margin-bottom:6px;">Current Environment</div>
+                <div style="font-size:20px; font-weight:800; color:#111827; margin-bottom:2px;">{curr['temperature_c']}°C <span style="font-size:14px; font-weight:500; color:#4B5563;">/ {curr['humidity_pct']}% RH</span></div>
+                <div style="font-size:12px; color:#4B5563;">Estimated Life: <b>{days_val} days</b></div>
             </div>
 
             <!-- Recommended Target -->
             <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:12px; padding:16px 18px;">
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#5C655F; margin-bottom:6px;">Recommended Target</div>
-                <div style="font-size:20px; font-weight:800; color:#1B4332; margin-bottom:2px;">{rec['temperature_c']}°C <span style="font-size:14px; font-weight:500; color:#5C655F;">/ {rec['humidity_pct']}% RH</span></div>
-                <div style="font-size:12px; color:#5C655F;">Optimized Life: <b>{rec_days_val} days</b></div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#4B5563; margin-bottom:6px;">Recommended Target</div>
+                <div style="font-size:20px; font-weight:800; color:#111827; margin-bottom:2px;">{rec['temperature_c']}°C <span style="font-size:14px; font-weight:500; color:#4B5563;">/ {rec['humidity_pct']}% RH</span></div>
+                <div style="font-size:12px; color:#4B5563;">Optimized Life: <b>{rec_days_val} days</b></div>
             </div>
 
             <!-- Extension Gain Card -->
@@ -662,7 +635,7 @@ def render_analysis_section(bundle, samples):
             </div>
         </div>
 
-        <div style="background:#FAF9F5; border-left:4px solid #52B788; border-radius:6px; padding:12px 16px; font-size:13px; color:#4A5568; line-height:1.5;">
+        <div style="background:#FAF9F5; border-left:4px solid #52B788; border-radius:6px; padding:12px 16px; font-size:13px; color:#111827; line-height:1.5;">
             <b>Storage Directive:</b> {rec['recommendation_summary']}
         </div>
     </div>
@@ -673,10 +646,10 @@ def render_analysis_section(bundle, samples):
     # =========================================================================
     st.html("<h3 style='font-size:19px; font-weight:800; color:#1B4332; margin:24px 0 12px 0;'>Visual Analytics & Biomarker Telemetry</h3>")
 
-    t1, t2, t3 = st.tabs(["🔬 Spectral Heatmap", "📊 CV Biomarkers", "📦 Dynamic FEFO Routing"])
+    sub_t1, sub_t2, sub_t3 = st.tabs(["🔬 Spectral Heatmap", "📊 CV Biomarkers", "📦 Dynamic FEFO Routing"])
 
-    with t1:
-        st.html("<p style='font-size:13px; color:#5C655F; margin-bottom:12px;'>Side-by-side comparison of natural exocarp optical RGB reflection against normalized pre-visual cellular degradation heatmap.</p>")
+    with sub_t1:
+        st.html("<p style='font-size:13px; color:#4B5563; margin-bottom:12px;'>Side-by-side comparison of natural exocarp optical RGB reflection against normalized pre-visual cellular degradation heatmap.</p>")
         col_rgb, col_heat = st.columns(2)
         with col_rgb:
             st.image(cv2.cvtColor(curr_bgr, cv2.COLOR_BGR2RGB), caption="Natural RGB Surface Reflection", use_container_width=True)
@@ -684,14 +657,14 @@ def render_analysis_section(bundle, samples):
             heatmap = generate_degradation_heatmap(curr_bgr)
             st.image(heatmap, caption="Spectral Pre-Visual Degradation Heatmap Overlay", use_container_width=True)
         st.html("""
-        <div style="display:flex; justify-content:center; gap:20px; padding:8px 0; font-size:12px; color:#5C655F;">
+        <div style="display:flex; justify-content:center; gap:20px; padding:8px 0; font-size:12px; color:#111827; font-weight:600;">
             <span><span style="color:#DC2626; font-size:14px;">●</span> Red/Yellow: Internal enzymatic breakdown zones</span>
             <span><span style="color:#2563EB; font-size:14px;">●</span> Blue/Green: Intact firm cellular tissue</span>
         </div>
         """)
 
-    with t2:
-        st.html("<p style='font-size:13px; color:#5C655F; margin-bottom:12px;'>Objective spectral, colorimetric, and micro-textural biomarkers extracted directly from the produce photograph.</p>")
+    with sub_t2:
+        st.html("<p style='font-size:13px; color:#4B5563; margin-bottom:12px;'>Objective spectral, colorimetric, and micro-textural biomarkers extracted directly from the produce photograph.</p>")
         bio = res['cv_biomarkers']
         bio_df = pd.DataFrame([
             {"Biomarker": "CIE Lightness (L*)", "Value": f"{bio['cie_lightness_L']:.1f}", "Target Baseline": "124.4 (Stage 1)", "Biological Significance": "Quantifies peel darkening and loss of exocarp gloss"},
@@ -704,8 +677,8 @@ def render_analysis_section(bundle, samples):
         ])
         st.dataframe(bio_df, hide_index=True, use_container_width=True)
 
-    with t3:
-        st.html("<p style='font-size:13px; color:#5C655F; margin-bottom:12px;'>Automated First-Expired, First-Out (FEFO) logistics and retail execution directives to eliminate shrink.</p>")
+    with sub_t3:
+        st.html("<p style='font-size:13px; color:#4B5563; margin-bottom:12px;'>Automated First-Expired, First-Out (FEFO) logistics and retail execution directives to eliminate shrink.</p>")
         fefo = res['fefo_recommendation']
         st.html(f"""
         <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:14px; padding:20px 24px; box-shadow:0 2px 10px rgba(0,0,0,0.02);">
@@ -715,13 +688,13 @@ def render_analysis_section(bundle, samples):
                     Markdown Incentive: {fefo['discount_percent']}% Off
                 </span>
             </div>
-            <div style="font-size:13px; color:#1F2421; margin-bottom:6px;">
+            <div style="font-size:13px; color:#111827; margin-bottom:6px;">
                 <b>Action:</b> {fefo['action']}
             </div>
-            <div style="font-size:13px; color:#1F2421; margin-bottom:6px;">
+            <div style="font-size:13px; color:#111827; margin-bottom:6px;">
                 <b>Logistics Route:</b> {fefo['routing']}
             </div>
-            <div style="font-size:13px; color:#1F2421;">
+            <div style="font-size:13px; color:#111827;">
                 <b>Execution SLA:</b> <span style="font-weight:700; color:#2D6A4F;">{fefo['urgency']}</span>
             </div>
         </div>
@@ -740,44 +713,183 @@ def render_analysis_section(bundle, samples):
 
 
 # =============================================================================
-# ABOUT SECTION
+# TAB 2: HOME & OVERVIEW (Comprehensive Product Presentation)
+# =============================================================================
+def render_home_section():
+    """Renders the comprehensive Home & Product Showcase page."""
+    st.html("""
+    <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:20px; padding:36px 38px; box-shadow:0 4px 20px rgba(20,54,40,0.04); margin-bottom:24px;">
+        <div style="display:inline-flex; align-items:center; gap:8px; background:#EEF4F0; border:1px solid #D8E8DC; border-radius:9999px; padding:4px 14px; font-size:12px; font-weight:700; color:#1B4332; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:16px;">
+            <span style="display:inline-block; width:8px; height:8px; background:#52B788; border-radius:50%;"></span>
+            Commercial Produce Intelligence Platform
+        </div>
+        <h1 style="font-size:36px; font-weight:800; color:#1B4332; line-height:1.2; letter-spacing:-0.025em; margin-bottom:14px;">
+            Know Your Fruit.<br/>Reduce Food Waste.
+        </h1>
+        <p style="font-size:16px; line-height:1.6; color:#111827; max-width:760px; margin-bottom:24px;">
+            KalFresh inspects fresh produce non-destructively through optical computer vision and biological degradation kinetics. Detect pre-visual softening, quantify remaining shelf life, and dynamically route commercial inventory before edible quality is lost.
+        </p>
+
+        <!-- Metric Pillar Cards -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:16px; margin-bottom:28px;">
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:14px; padding:18px 20px;">
+                <div style="font-size:12px; font-weight:700; color:#4B5563; margin-bottom:4px;">Produce Category</div>
+                <div style="font-size:18px; font-weight:800; color:#1B4332;">Hass Avocado</div>
+                <div style="font-size:12px; color:#111827; font-weight:600;">Persea americana</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:14px; padding:18px 20px;">
+                <div style="font-size:12px; font-weight:700; color:#4B5563; margin-bottom:4px;">Optical Biomarkers</div>
+                <div style="font-size:18px; font-weight:800; color:#1B4332;">37 CV Metrics</div>
+                <div style="font-size:12px; color:#111827; font-weight:600;">CIE L*a*b*, GLCM, Chlorophyll</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:14px; padding:18px 20px;">
+                <div style="font-size:12px; font-weight:700; color:#4B5563; margin-bottom:4px;">Pre-Visual Detection</div>
+                <div style="font-size:18px; font-weight:800; color:#1B4332;">Zero-Day Latency</div>
+                <div style="font-size:12px; color:#111827; font-weight:600;">Before outward browning</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:14px; padding:18px 20px;">
+                <div style="font-size:12px; font-weight:700; color:#4B5563; margin-bottom:4px;">Storage Kinetic Gain</div>
+                <div style="font-size:18px; font-weight:800; color:#1B4332;">+10+ Days Life</div>
+                <div style="font-size:12px; color:#111827; font-weight:600;">Dynamic FEFO Inventory Action</div>
+            </div>
+        </div>
+    </div>
+    """)
+
+    # --- Problem Statement & Value Proposition ---
+    st.html("""
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:20px; margin-bottom:24px;">
+        <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:16px; padding:24px 26px;">
+            <div style="font-size:20px; margin-bottom:8px;">⚠️</div>
+            <div style="font-size:17px; font-weight:800; color:#1B4332; margin-bottom:8px;">The Hidden Shrink Crisis</div>
+            <p style="font-size:14px; color:#111827; line-height:1.6; margin:0;">
+                Globally, 1.3 billion tonnes of food are wasted annually (UN SDG 12.3). Fresh produce undergoes internal pectin breakdown days before superficial skin discoloration appears. Legacy First-In, First-Out (FIFO) retail replenishment cannot detect this pre-visual collapse.
+            </p>
+        </div>
+
+        <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:16px; padding:24px 26px;">
+            <div style="font-size:20px; margin-bottom:8px;">💡</div>
+            <div style="font-size:17px; font-weight:800; color:#1B4332; margin-bottom:8px;">Non-Destructive Intelligence</div>
+            <p style="font-size:14px; color:#111827; line-height:1.6; margin:0;">
+                KalFresh replaces destructive penetrometers and subjective manual squeezing with multi-spectral colorimetry and texture entropy. Fruit remains 100% pristine and sellable while managers gain precise remaining shelf-life predictions in days.
+            </p>
+        </div>
+
+        <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:16px; padding:24px 26px;">
+            <div style="font-size:20px; margin-bottom:8px;">📦</div>
+            <div style="font-size:17px; font-weight:800; color:#1B4332; margin-bottom:8px;">Dynamic FEFO Routing</div>
+            <p style="font-size:14px; color:#111827; line-height:1.6; margin:0;">
+                Instead of treating batches uniformly, KalFresh generates actionable First-Expired, First-Out directives: route fast-softening fruit to kitchen prep, trigger dynamic flash markdowns (15%–40%), or redirect resilient lots to cool storage retention.
+            </p>
+        </div>
+    </div>
+    """)
+
+    # --- 5 Commercial Ripening Stages Breakdown ---
+    st.html("""
+    <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:18px; padding:28px 32px; box-shadow:0 4px 16px rgba(20,54,40,0.04); margin-bottom:24px;">
+        <div style="font-size:19px; font-weight:800; color:#1B4332; margin-bottom:6px;">
+            Commercial Ripening Classification Matrix
+        </div>
+        <p style="font-size:13px; color:#4B5563; margin-bottom:18px;">
+            Calibrated to USDA and commercial packinghouse staging rubrics.
+        </p>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px;">
+            <div style="background:#FAF9F5; border-left:4px solid #1B4332; border-radius:8px; padding:14px 16px;">
+                <div style="font-size:11px; font-weight:700; color:#1B4332; text-transform:uppercase;">Stage 1 · 80–100%</div>
+                <div style="font-size:15px; font-weight:800; color:#111827; margin:2px 0;">Underripe (Hard)</div>
+                <div style="font-size:12px; color:#4B5563;">Intact cell walls, maximum shelf stability (~8–14 days remaining).</div>
+            </div>
+
+            <div style="background:#FAF9F5; border-left:4px solid #2D6A4F; border-radius:8px; padding:14px 16px;">
+                <div style="font-size:11px; font-weight:700; color:#2D6A4F; text-transform:uppercase;">Stage 2 · 50–60%</div>
+                <div style="font-size:15px; font-weight:800; color:#111827; margin:2px 0;">Breaking (Softening)</div>
+                <div style="font-size:12px; color:#4B5563;">Pre-visual pectin breakdown initiated before visible browning (~5–8 days).</div>
+            </div>
+
+            <div style="background:#FAF9F5; border-left:4px solid #D97706; border-radius:8px; padding:14px 16px;">
+                <div style="font-size:11px; font-weight:700; color:#D97706; text-transform:uppercase;">Stage 3 · 32–50%</div>
+                <div style="font-size:15px; font-weight:800; color:#111827; margin:2px 0;">Firm-Ripe</div>
+                <div style="font-size:12px; color:#4B5563;">Active cellular transition. Ideal for eye-level retail display (~3–5 days).</div>
+            </div>
+
+            <div style="background:#FAF9F5; border-left:4px solid #EA580C; border-radius:8px; padding:14px 16px;">
+                <div style="font-size:11px; font-weight:700; color:#EA580C; text-transform:uppercase;">Stage 4 · 15–32%</div>
+                <div style="font-size:15px; font-weight:800; color:#111827; margin:2px 0;">Ready-to-Eat</div>
+                <div style="font-size:12px; color:#4B5563;">Optimal organoleptic quality. Consume or sell within 24–48 hours (~1–3 days).</div>
+            </div>
+
+            <div style="background:#FAF9F5; border-left:4px solid #DC2626; border-radius:8px; padding:14px 16px;">
+                <div style="font-size:11px; font-weight:700; color:#DC2626; text-transform:uppercase;">Stage 5 · 0–15%</div>
+                <div style="font-size:15px; font-weight:800; color:#111827; margin:2px 0;">Overripe (Spoilage)</div>
+                <div style="font-size:12px; color:#4B5563;">Vascular browning and rancidity risk. Immediate bio-diversion / write-off (0 days).</div>
+            </div>
+        </div>
+    </div>
+    """)
+
+
+# =============================================================================
+# TAB 3: ABOUT & ARCHITECTURE (Technical Documentation)
 # =============================================================================
 def render_about_section():
-    """Renders the comprehensive architectural and scientific overview."""
+    """Renders the comprehensive architectural and scientific documentation."""
     st.html("""
     <div style="background:#FFFFFF; border:1px solid #E8EBE4; border-radius:20px; padding:36px 40px; box-shadow:0 4px 20px rgba(20,54,40,0.04); margin-bottom:24px;">
-        <h2 style="font-size:28px; font-weight:800; color:#1B4332; margin-bottom:12px; letter-spacing:-0.02em;">
-            About KalFresh
+        <h2 style="font-size:26px; font-weight:800; color:#1B4332; margin-bottom:12px; letter-spacing:-0.02em;">
+            About KalFresh & System Architecture
         </h2>
-        <p style="font-size:15px; color:#5C655F; line-height:1.6; margin-bottom:20px;">
-            KalFresh was engineered for the <b>IIT Bombay Computer Vision AI Hackathon</b> to solve a trillion-dollar supply chain vulnerability: <i>pre-visual food waste</i>.
+        <p style="font-size:15px; color:#111827; line-height:1.6; margin-bottom:22px;">
+            KalFresh was built for the <b>IIT Bombay Computer Vision AI Hackathon</b> to deploy state-of-the-art computer vision algorithms in service of global food security and supply chain optimization.
         </p>
 
-        <h3 style="font-size:18px; font-weight:800; color:#1B4332; margin:20px 0 8px 0;">
-            1. The Problem: Silent Produce Waste
+        <h3 style="font-size:18px; font-weight:800; color:#1B4332; margin:22px 0 8px 0;">
+            1. The 5-Head LightGBM Coordinated Architecture
         </h3>
-        <p style="font-size:14px; color:#4A5568; line-height:1.6;">
-            Globally, over 1.3 billion tonnes of food are lost or wasted annually (UN SDG 12.3). Fresh fruits like avocados transition through biochemical softening days before visible browning or rot appears on the exocarp. Casual human inspection and legacy FIFO (First-In, First-Out) inventory systems fail to catch this pre-visual degradation, leading to premature decay and retail write-offs.
+        <p style="font-size:14px; color:#111827; line-height:1.6; margin-bottom:14px;">
+            Rather than relying on a single opaque black-box classifier, KalFresh deploys a specialized 5-Head LightGBM architecture that mirrors the multi-dimensional requirements of commercial agricultural logistics:
         </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px; margin-bottom:20px;">
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:10px; padding:14px 16px;">
+                <div style="font-weight:800; color:#1B4332; font-size:14px; margin-bottom:4px;">Head 1: Ripening Stage Classifier</div>
+                <div style="font-size:12px; color:#4B5563; line-height:1.5;">Multiclass Gradient Boosted Decision Trees outputting class probabilities and confidence scores across Stages 1–5.</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:10px; padding:14px 16px;">
+                <div style="font-weight:800; color:#1B4332; font-size:14px; margin-bottom:4px;">Head 2: Longitudinal RSL Regressor</div>
+                <div style="font-size:12px; color:#4B5563; line-height:1.5;">Predicts remaining shelf life in days until Stage 5 senescent breakdown trained against ground-truth fruit trajectories.</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:10px; padding:14px 16px;">
+                <div style="font-weight:800; color:#1B4332; font-size:14px; margin-bottom:4px;">Head 3: Temperature-Conditioned RSL</div>
+                <div style="font-size:12px; color:#4B5563; line-height:1.5;">Conditions shelf life on empirical storage temperatures (10°C–23°C trials) with biological Q10 kinetic scaling for ambient deviations.</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:10px; padding:14px 16px;">
+                <div style="font-weight:800; color:#1B4332; font-size:14px; margin-bottom:4px;">Head 4: Internal Degradation Regressor</div>
+                <div style="font-size:12px; color:#4B5563; line-height:1.5;">Quantifies cellular breakdown index (0%–100%) to flag pre-visual internal softening before peel browning occurs.</div>
+            </div>
+            <div style="background:#FAF9F5; border:1px solid #E8EBE4; border-radius:10px; padding:14px 16px;">
+                <div style="font-weight:800; color:#1B4332; font-size:14px; margin-bottom:4px;">Head 5: Commercial Quality Regressor</div>
+                <div style="font-size:12px; color:#4B5563; line-height:1.5;">Evaluates commercial grade (Grade A, B, C, Reject) and market value realization tiers for retail merchandisers.</div>
+            </div>
+        </div>
 
-        <h3 style="font-size:18px; font-weight:800; color:#1B4332; margin:20px 0 8px 0;">
-            2. Scientific Methodology & 5-Head ML Architecture
+        <h3 style="font-size:18px; font-weight:800; color:#1B4332; margin:22px 0 8px 0;">
+            2. Feature Engineering: 37 Calibrated CV Biomarkers
         </h3>
-        <p style="font-size:14px; color:#4A5568; line-height:1.6;">
-            KalFresh models the complete longitudinal trajectory of fruit degradation using 37 calibrated computer vision biomarkers (CIE L*a*b*, GLCM texture energy, excess green chlorophyll indices, and Laplacian surface roughness). Rather than a single black-box prediction, KalFresh deploys a coordinated 5-Head LightGBM bundle:
+        <p style="font-size:14px; color:#111827; line-height:1.6; margin-bottom:12px;">
+            From each input produce photograph, KalFresh executes Otsu foreground segmentation followed by morphological cleanup, extracting 37 optical biomarkers:
         </p>
-        <ul style="font-size:14px; color:#4A5568; line-height:1.8; margin-left:20px;">
-            <li><b>Ripening Stage Classifier:</b> Predicts commercial ripening stages (Stage 1 to 5) with multiclass probability confidence.</li>
-            <li><b>Longitudinal RSL Regressor:</b> Computes remaining shelf life in days until Stage 5 senescent breakdown.</li>
-            <li><b>Temperature-Conditioned RSL Regressor:</b> Predicts shelf life conditioned on real storage temperatures (validated against empirical 10°C–23°C trials).</li>
-            <li><b>Internal Degradation Index Regressor:</b> Predicts internal tissue breakdown severity (0%–100%).</li>
-            <li><b>Commercial Quality Regressor:</b> Evaluates market grading tier (Grade A, B, C, Reject).</li>
+        <ul style="font-size:13px; color:#111827; line-height:1.8; margin-left:20px; margin-bottom:20px;">
+            <li><b>Colorimetric Chromaticity:</b> CIE L*a*b* calibrated space, HSV cylindrical coordinates, and normalized RGB channels.</li>
+            <li><b>Vegetation & Senescence Pigment Indices:</b> Excess Green (ExG = 2G - R - B), Excess Red (ExR = 1.4R - G), and Normalized Difference Chlorophyll Index (NDCI).</li>
+            <li><b>Micro-Textural Surface Entropy:</b> Gray-Level Co-occurrence Matrix (GLCM) contrast, energy, homogeneity, and Laplacian variance quantifying microscopic skin nodulation turgor.</li>
+            <li><b>Spatial Heterogeneity & Necrosis:</b> 10th percentile lightness (p10_L), 90th percentile red chroma (p90_a), and localized surface necrosis percentage (decay_pct).</li>
         </ul>
 
-        <h3 style="font-size:18px; font-weight:800; color:#1B4332; margin:20px 0 8px 0;">
-            3. Zero Data Leakage Validation
+        <h3 style="font-size:18px; font-weight:800; color:#1B4332; margin:22px 0 8px 0;">
+            3. Zero Data Leakage Validation Protocol
         </h3>
-        <p style="font-size:14px; color:#4A5568; line-height:1.6;">
+        <p style="font-size:14px; color:#111827; line-height:1.6; margin-bottom:0;">
             Models were trained and evaluated strictly using fruit-level specimen splits: all longitudinal observations of a specific fruit specimen belong exclusively to either train or test, ensuring strict generalization to unseen produce in real commercial operations.
         </p>
     </div>
@@ -790,14 +902,14 @@ def render_about_section():
 def render_footer():
     """Renders the clean, minimal SaaS footer."""
     st.html("""
-    <div style="margin-top:40px; padding-top:20px; border-top:1px solid #E8EBE4; text-align:center; font-size:12px; color:#8A948E; line-height:1.6;">
-        <div style="font-weight:700; color:#1B4332; margin-bottom:4px; font-size:13px;">
+    <div style="margin-top:36px; padding-top:20px; border-top:1px solid #E8EBE4; text-align:center; font-size:12px; color:#4B5563; line-height:1.6;">
+        <div style="font-weight:800; color:#1B4332; margin-bottom:4px; font-size:13px;">
             KalFresh · AI-Powered Freshness Intelligence
         </div>
-        <div>
+        <div style="color:#111827; font-weight:600;">
             Predicting the Unseen: Pre-Visual Food Waste Mitigation · IIT Bombay Computer Vision AI Hackathon
         </div>
-        <div style="font-size:11px; color:#A0ABA4; margin-top:4px; max-width:640px; margin-left:auto; margin-right:auto;">
+        <div style="font-size:11px; color:#6B7280; margin-top:4px; max-width:640px; margin-left:auto; margin-right:auto;">
             Disclaimer: Predictions are computational estimates based on computer vision biomarkers and calibrated storage kinetics. They are intended as operational decision-support intelligence and should not replace certified physical phytosanitary inspection.
         </div>
     </div>
@@ -818,17 +930,23 @@ def main():
 
     samples = load_sample_dataset()
 
-    # Top Header & Navigation
+    # Top Header
     render_header()
 
-    # Active Page Dispatch
-    active_page = st.session_state.get("nav_page", "Analyze Freshness")
+    # Primary Top-Level Navigation Tabs (100% Native, Frictionless, and Instant)
+    tab_analyze, tab_home, tab_about = st.tabs([
+        "🥑 Analyze Freshness",
+        "🌿 Home & Overview",
+        "📖 About & Architecture"
+    ])
 
-    if active_page == "Home":
-        render_hero_section()
-    elif active_page == "Analyze Freshness":
+    with tab_analyze:
         render_analysis_section(bundle, samples)
-    elif active_page == "About":
+
+    with tab_home:
+        render_home_section()
+
+    with tab_about:
         render_about_section()
 
     # Global Footer
