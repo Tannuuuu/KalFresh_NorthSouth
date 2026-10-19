@@ -100,11 +100,11 @@ def load_sample_dataset():
 
     df = pd.read_excel(excel_path)
     stage_names = {
-        1: "Stage 1 (Underripe: 80–100%)",
-        2: "Stage 2 (Breaking / Softening: 50–60%)",
-        3: "Stage 3 (Firm-Ripe: 32–50%)",
-        4: "Stage 4 (Ready-to-Eat: 15–32%)",
-        5: "Stage 5 (Overripe / Spoilage: 0–15%)"
+        1: "Stage 1 (Underripe)",
+        2: "Stage 2 (Breaking / Softening)",
+        3: "Stage 3 (Firm-Ripe)",
+        4: "Stage 4 (Ready-to-Eat)",
+        5: "Stage 5 (Overripe / Spoilage)"
     }
 
     samples = []
