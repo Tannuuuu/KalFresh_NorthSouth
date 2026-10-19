@@ -3,14 +3,16 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Temporary uploaded files from Streamlit
-temp_uploaded.jpg
+# Temporary uploaded files and scratch files
+temp_uploaded*
+*.tmp
 
-# Large archives (Exceeds GitHub 100MB limit)
+# Large archives & raw photographic dataset (Exceeds GitHub limit)
 *.zip
 *.tar.gz
 *.rar
 Hass Avocado Ripening Photographic Dataset.zip
+Hass Avocado Ripening Photographic Dataset/
 
 # Virtual environments
 .venv/

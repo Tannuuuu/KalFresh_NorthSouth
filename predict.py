@@ -130,13 +130,14 @@ def get_fefo_action(rsl_days: float, stage: int, quality_tier: str) -> dict:
 
 
 def predict(
-    image_path: str,
+    image_input,
     model_bundle_path: str = MODEL_PATH,
     temperature_c: float = 20.0,
     humidity_pct: float = 65.0
 ) -> dict:
     """
-    Run full prediction pipeline on a single image, conditioned on storage environment.
+    Run full prediction pipeline on a single image (file path or numpy BGR array),
+    conditioned on storage environment.
     """
     if not os.path.exists(model_bundle_path):
         raise FileNotFoundError(
@@ -151,7 +152,7 @@ def predict(
     quality_reg = bundle.get('quality_reg', None)
 
     # Extract CV features
-    feats_dict = extract_features(image_path)
+    feats_dict = extract_features(image_input)
     feat_df = pd.DataFrame([feats_dict])[FEATURE_NAMES]
 
     # Predict Stage
@@ -252,7 +253,7 @@ def predict(
     is_pre_visual = (pred_stage in [1, 2]) and (pred_deg >= 22.0 or current_rsl < 8.0)
 
     result = {
-        "image_path": image_path,
+        "image_path": image_input if isinstance(image_input, str) else "uploaded_image",
         "predicted_stage": pred_stage,
         "stage_name": stage_info.get("name", "Unknown"),
         "confidence_pct": round(stage_conf, 1),
@@ -334,13 +335,20 @@ def main():
         print(f"Testing sample {args.sample}: using image {image_path}")
 
     if image_path is None:
-        # Default fallback to first sample image in dataset
+        # Default fallback to first sample image in dataset or test inputs
         dataset_dir = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset")
         if os.path.exists(dataset_dir):
             files = [f for f in os.listdir(dataset_dir) if f.endswith(".jpg")]
             if files:
-                image_path = os.path.join(dataset_dir, files[0])
+                image_path = os.path.join(dataset_dir, sorted(files)[0])
                 print(f"No image specified. Using default sample image:\n  {image_path}\n")
+        else:
+            test_dir = os.path.join(os.path.dirname(__file__), "give_as_inputs_to_test")
+            if os.path.exists(test_dir):
+                files = [f for f in os.listdir(test_dir) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+                if files:
+                    image_path = os.path.join(test_dir, sorted(files)[0])
+                    print(f"No image specified. Using default sample image:\n  {image_path}\n")
 
     if not image_path or not os.path.exists(image_path):
         print("Error: Please provide a valid image path via --image <path>.")

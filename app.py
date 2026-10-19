@@ -25,6 +25,7 @@ Features:
 
 import os
 import sys
+import tempfile
 import cv2
 import base64
 import joblib
@@ -33,9 +34,9 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-# Ensure repository root is on sys.path even when run directly from Downloads
-REPO_DIR = r"c:\Users\RAMYASRI\Desktop\northsouthiitb\KalFresh_NorthSouth"
-if os.path.exists(REPO_DIR) and REPO_DIR not in sys.path:
+# Ensure repository root is on sys.path dynamically
+REPO_DIR = os.path.dirname(os.path.abspath(__file__))
+if REPO_DIR not in sys.path:
     sys.path.insert(0, REPO_DIR)
 
 from features import extract_features, generate_degradation_heatmap, segment_fruit, FEATURE_NAMES
@@ -89,16 +90,10 @@ def load_model():
 
 @st.cache_data
 def load_sample_dataset():
-    """Load sample avocado images from dataset."""
+    """Load sample avocado images from dataset or test samples folder."""
     data_dir = os.path.join(REPO_DIR, "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset")
     excel_path = os.path.join(REPO_DIR, "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset.xlsx")
-    if not os.path.exists(excel_path) or not os.path.exists(data_dir):
-        data_dir = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset")
-        excel_path = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset.xlsx")
-    if not os.path.exists(excel_path) or not os.path.exists(data_dir):
-        return []
 
-    df = pd.read_excel(excel_path)
     stage_names = {
         1: "Stage 1 (Underripe)",
         2: "Stage 2 (Breaking / Softening)",
@@ -108,17 +103,44 @@ def load_sample_dataset():
     }
 
     samples = []
-    for stage in [1, 2, 3, 4, 5]:
-        sub = df[df['Ripening Index Classification'] == stage]
-        for _, row in sub.head(2).iterrows():
-            img_path = os.path.join(data_dir, f"{row['File Name']}.jpg")
-            if os.path.exists(img_path):
-                samples.append({
-                    "label": f"{stage_names[stage]} — {row['File Name']}",
-                    "path": img_path,
-                    "stage": stage,
-                    "file_name": row['File Name']
-                })
+    if os.path.exists(excel_path) and os.path.exists(data_dir):
+        try:
+            df = pd.read_excel(excel_path)
+            for stage in [1, 2, 3, 4, 5]:
+                sub = df[df['Ripening Index Classification'] == stage]
+                for _, row in sub.head(2).iterrows():
+                    img_path = os.path.join(data_dir, f"{row['File Name']}.jpg")
+                    if os.path.exists(img_path):
+                        samples.append({
+                            "label": f"{stage_names[stage]} — {row['File Name']}",
+                            "path": img_path,
+                            "stage": stage,
+                            "file_name": row['File Name']
+                        })
+        except Exception:
+            pass
+
+    # Fallback to test samples directory (committed in git, safe for cloud deployment)
+    if not samples:
+        test_dir = os.path.join(REPO_DIR, "give_as_inputs_to_test")
+        if os.path.exists(test_dir):
+            file_stage_map = {
+                "avo_1.png": (1, "Stage 1 (Underripe) — avo_1"),
+                "avo_2.jpeg": (2, "Stage 2 (Breaking) — avo_2"),
+                "avo_3.jpeg": (3, "Stage 3 (Firm-Ripe) — avo_3"),
+                "avo_4.png": (4, "Stage 4 (Ready-to-Eat) — avo_4"),
+                "avo_5.jpg": (5, "Stage 5 (Overripe) — avo_5"),
+            }
+            for fname, (stg, lbl) in file_stage_map.items():
+                p = os.path.join(test_dir, fname)
+                if os.path.exists(p):
+                    samples.append({
+                        "label": lbl,
+                        "path": p,
+                        "stage": stg,
+                        "file_name": fname
+                    })
+
     return samples
 
 
@@ -460,11 +482,24 @@ def main():
     target_img_path = None
 
     if uploaded_file is not None:
-        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-        target_img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        temp_path = os.path.join(REPO_DIR, "temp_uploaded.jpg")
-        cv2.imwrite(temp_path, target_img_bgr)
-        target_img_path = temp_path
+        try:
+            # Decode uploaded image bytes directly using cv2.imdecode and NumPy
+            file_bytes = np.frombuffer(uploaded_file.getvalue(), dtype=np.uint8)
+            decoded_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            if decoded_bgr is not None:
+                target_img_bgr = decoded_bgr
+                # Save to a safe OS-independent temporary file for pipelines requiring a file path
+                suffix = os.path.splitext(uploaded_file.name)[-1].lower()
+                if suffix not in [".jpg", ".jpeg", ".png"]:
+                    suffix = ".jpg"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+                    temp_path = tmp_file.name
+                    cv2.imwrite(temp_path, target_img_bgr)
+                    target_img_path = temp_path
+            else:
+                st.error("Could not decode the uploaded image. Please upload a valid JPG or PNG file.")
+        except Exception as e:
+            st.error(f"Error reading uploaded file: {e}")
     elif sample_selected_path is not None:
         target_img_path = sample_selected_path
         target_img_bgr = cv2.imread(target_img_path)
@@ -473,15 +508,29 @@ def main():
         sample_selected_stage = samples[0]["stage"]
         target_img_bgr = cv2.imread(target_img_path)
 
+    # Detect if user selected a new image or triggered analysis
+    image_identifier = (
+        f"upload_{uploaded_file.name}_{uploaded_file.size}"
+        if uploaded_file is not None
+        else f"sample_{target_img_path}"
+    )
+    should_run = (
+        analyze_btn
+        or ('prediction' not in st.session_state)
+        or (st.session_state.get('active_image_id') != image_identifier)
+    )
+
     # Run Prediction or load cached result
-    if analyze_btn or 'prediction' not in st.session_state:
-        if target_img_bgr is not None and target_img_path is not None:
-            res = predict(target_img_path, temperature_c=float(user_temp), humidity_pct=float(user_humidity))
+    if should_run:
+        if target_img_bgr is not None:
+            inference_input = target_img_path if target_img_path is not None else target_img_bgr
+            res = predict(inference_input, temperature_c=float(user_temp), humidity_pct=float(user_humidity))
             st.session_state['prediction'] = res
             st.session_state['img_bgr'] = target_img_bgr
             st.session_state['user_temp'] = user_temp
             st.session_state['user_humidity'] = user_humidity
             st.session_state['active_stage'] = sample_selected_stage if (src_tab != "Upload Custom Photo" and sample_selected_stage is not None) else res['predicted_stage']
+            st.session_state['active_image_id'] = image_identifier
 
     if 'prediction' not in st.session_state:
         st.info("Select or upload an avocado image to view the Freshness Report.")
