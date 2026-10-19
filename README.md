@@ -7,7 +7,9 @@
 [![Dataset](https://img.shields.io/badge/Dataset-Hass%20Avocado%20Ripening%20(13.6k%20Images)-success.svg)]()
 [![Model](https://img.shields.io/badge/Models-5--Head%20LightGBM%20Bundle-purple.svg)]()
 [![Validation](https://img.shields.io/badge/Validation-Zero%20Data%20Leakage%20(Fruit--Level)-brightgreen.svg)]()
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://kalfresh-northsouthgit.streamlit.app/)
 
+> **Live Deployment:** [https://kalfresh-northsouthgit.streamlit.app/](https://kalfresh-northsouthgit.streamlit.app/)  
 > **IIT Bombay Computer Vision AI Hackathon**  
 > An intelligent, biophysically-grounded computer vision platform that detects invisible cellular degradation in fresh produce, forecasts remaining shelf life conditioned on real-world storage microclimates, and triggers automated First-Expired, First-Out (FEFO) retail inventory directives to cut supply-chain shrink by **34.4%**.
 
@@ -533,7 +535,7 @@ python predict.py --sample 2 --temp 28.0 --humidity 65.0
 ```bash
 streamlit run app.py
 ```
-Open [http://localhost:8501](http://localhost:8501) in your browser to inspect produce, test storage microclimates, view degradation heatmaps, and toggle between Dark and Light mode.
+Open [http://localhost:8501](http://localhost:8501) or visit the live deployment at [https://kalfresh-northsouthgit.streamlit.app/](https://kalfresh-northsouthgit.streamlit.app/) in your browser to inspect produce, test storage microclimates, view degradation heatmaps, and toggle between Dark and Light mode.
 
 ---
 
