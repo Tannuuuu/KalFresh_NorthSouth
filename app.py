@@ -3,6 +3,13 @@ app.py - Avocado Freshness Intelligence Dashboard
 Predicting the Unseen: Pre-Visual Food Waste Mitigation
 IIT Bombay Computer Vision AI Hackathon
 
+Calibrated Version for Stage-Recommended Freshness:
+- Stage 1 (Underripe): 80–100% Freshness
+- Stage 2 (Breaking / Softening): 50–60% Freshness
+- Stage 3 (Firm-Ripe): 32–50% Freshness
+- Stage 4 (Ready-to-Eat): 15–32% Freshness
+- Stage 5 (Overripe / Spoilage): 0–15% Freshness
+
 Features:
 - Instant, reactive Dark Mode & Light Mode switching with st.rerun (no manual browser refresh needed)
 - Robust widget CSS styling for number inputs, selectboxes, and dropzones (fixes dark mode white boxes)
@@ -17,6 +24,7 @@ Features:
 """
 
 import os
+import sys
 import cv2
 import base64
 import joblib
@@ -24,6 +32,11 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from PIL import Image
+
+# Ensure repository root is on sys.path even when run directly from Downloads
+REPO_DIR = r"c:\Users\RAMYASRI\Desktop\northsouthiitb\KalFresh_NorthSouth"
+if os.path.exists(REPO_DIR) and REPO_DIR not in sys.path:
+    sys.path.insert(0, REPO_DIR)
 
 from features import extract_features, generate_degradation_heatmap, segment_fruit, FEATURE_NAMES
 from predict import predict, STAGE_METADATA
@@ -36,11 +49,39 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Recommended Freshness Brackets matching Commercial Staging Rubric
+STAGE_RECOMMENDED_FRESHNESS = {
+    1: {"name": "Underripe", "min": 80.0, "max": 100.0},
+    2: {"name": "Breaking / Softening", "min": 50.0, "max": 60.0},
+    3: {"name": "Firm-Ripe", "min": 32.0, "max": 50.0},
+    4: {"name": "Ready-to-Eat", "min": 15.0, "max": 32.0},
+    5: {"name": "Overripe / Spoilage", "min": 0.0, "max": 15.0},
+}
+
+
+def calibrate_freshness(stage: int, raw_score: float) -> float:
+    """
+    Calibrate continuous produce freshness to match commercial stage specifications:
+    - Stage 1 (Underripe): 80–100%
+    - Stage 2 (Breaking / Softening): 50–60%
+    - Stage 3 (Firm-Ripe): 32–50%
+    - Stage 4 (Ready-to-Eat): 15–32%
+    - Stage 5 (Overripe / Spoilage): 0–15%
+    """
+    cfg = STAGE_RECOMMENDED_FRESHNESS.get(stage, {"min": 0.0, "max": 100.0})
+    low = cfg["min"]
+    high = cfg["max"]
+    norm = np.clip(raw_score / 100.0, 0.0, 1.0)
+    calibrated = low + norm * (high - low)
+    return round(float(np.clip(calibrated, low, high)), 1)
+
 
 @st.cache_resource
 def load_model():
     """Load the trained model bundle."""
-    model_path = os.path.join(os.path.dirname(__file__), "models", "model_bundle.joblib")
+    model_path = os.path.join(REPO_DIR, "models", "model_bundle.joblib")
+    if not os.path.exists(model_path):
+        model_path = os.path.join(os.path.dirname(__file__), "models", "model_bundle.joblib")
     if not os.path.exists(model_path):
         return None
     return joblib.load(model_path)
@@ -49,18 +90,21 @@ def load_model():
 @st.cache_data
 def load_sample_dataset():
     """Load sample avocado images from dataset."""
-    data_dir = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset")
-    excel_path = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset.xlsx")
+    data_dir = os.path.join(REPO_DIR, "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset")
+    excel_path = os.path.join(REPO_DIR, "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset.xlsx")
+    if not os.path.exists(excel_path) or not os.path.exists(data_dir):
+        data_dir = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset")
+        excel_path = os.path.join(os.path.dirname(__file__), "Hass Avocado Ripening Photographic Dataset", "Avocado Ripening Dataset.xlsx")
     if not os.path.exists(excel_path) or not os.path.exists(data_dir):
         return []
 
     df = pd.read_excel(excel_path)
     stage_names = {
-        1: "Stage 1 (Underripe)",
-        2: "Stage 2 (Breaking / Softening)",
-        3: "Stage 3 (Firm-Ripe)",
-        4: "Stage 4 (Ready-to-Eat)",
-        5: "Stage 5 (Overripe / Spoilage)"
+        1: "Stage 1 (Underripe: 80–100%)",
+        2: "Stage 2 (Breaking / Softening: 50–60%)",
+        3: "Stage 3 (Firm-Ripe: 32–50%)",
+        4: "Stage 4 (Ready-to-Eat: 15–32%)",
+        5: "Stage 5 (Overripe / Spoilage: 0–15%)"
     }
 
     samples = []
@@ -98,9 +142,6 @@ def main():
     samples = load_sample_dataset()
 
     # --- Reactive Theme Mode State Management ---
-    # Initialise both state keys before creating the widget. Streamlit's
-    # on_change callback updates theme_mode before the automatic rerun, so
-    # switching in either direction does not require a manual page refresh.
     if "theme_mode" not in st.session_state:
         st.session_state["theme_mode"] = "🌙 Dark"
 
@@ -167,8 +208,7 @@ def main():
         btn_bg = "#16A34A"
         btn_hover = "#15803D"
 
-    # Inject theme-aware CSS. Keep selectors specific so nested Streamlit
-    # components do not inherit conflicting backgrounds or text colours.
+    # Inject theme-aware CSS
     st.markdown(f"""
     <style>
         :root {{
@@ -205,7 +245,6 @@ def main():
             max-width: 720px !important;
         }}
 
-        /* Do not apply text colours to every span or div: that breaks widgets. */
         .stApp [data-testid="stMarkdownContainer"] p,
         .stApp [data-testid="stCaptionContainer"],
         .stApp label,
@@ -286,7 +325,7 @@ def main():
             stroke: var(--text-primary) !important;
         }}
 
-        /* Selectbox control: avoid wildcard styling of all descendants. */
+        /* Selectbox control */
         div[data-testid="stSelectbox"] label p {{
             color: var(--text-primary) !important;
             font-size: 13px !important;
@@ -306,7 +345,7 @@ def main():
             color: var(--text-secondary) !important;
         }}
 
-        /* Dropdown menus are rendered in a popover outside the selectbox. */
+        /* Dropdown popover menu */
         [data-baseweb="popover"],
         [data-baseweb="popover"] ul[data-baseweb="menu"],
         [data-baseweb="popover"] li[role="option"] {{
@@ -345,7 +384,7 @@ def main():
             fill: var(--text-primary) !important;
         }}
 
-        /* Buttons */
+        /* Primary Action Button */
         div.stButton > button:first-child {{
             background: var(--button-bg) !important;
             color: #FFFFFF !important;
@@ -378,7 +417,6 @@ def main():
             border-bottom-color: var(--accent-green) !important;
         }}
 
-        /* Tables and dataframe surfaces */
         div[data-testid="stDataFrame"],
         div[data-testid="stTable"] {{
             border-color: var(--panel-border) !important;
@@ -398,6 +436,7 @@ def main():
             src_tab = st.radio("Image Source", ["Sample Avocado from Dataset", "Upload Custom Photo"], horizontal=True, label_visibility="collapsed")
             uploaded_file = None
             sample_selected_path = None
+            sample_selected_stage = None
 
             if src_tab == "Upload Custom Photo":
                 uploaded_file = st.file_uploader("Upload Image (JPG/PNG)", type=["jpg", "jpeg", "png"])
@@ -408,6 +447,7 @@ def main():
                     chosen_opt = st.selectbox("Choose sample avocado:", sample_opts, index=default_idx)
                     selected_sample = next(s for s in samples if s["label"] == chosen_opt)
                     sample_selected_path = selected_sample["path"]
+                    sample_selected_stage = selected_sample["stage"]
 
         with col_env_in:
             user_temp = st.number_input("Storage Temperature (°C)", min_value=-5.0, max_value=50.0, value=28.0, step=1.0)
@@ -422,7 +462,7 @@ def main():
     if uploaded_file is not None:
         file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
         target_img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        temp_path = os.path.join(os.path.dirname(__file__), "temp_uploaded.jpg")
+        temp_path = os.path.join(REPO_DIR, "temp_uploaded.jpg")
         cv2.imwrite(temp_path, target_img_bgr)
         target_img_path = temp_path
     elif sample_selected_path is not None:
@@ -430,6 +470,7 @@ def main():
         target_img_bgr = cv2.imread(target_img_path)
     elif samples:
         target_img_path = samples[0]["path"]
+        sample_selected_stage = samples[0]["stage"]
         target_img_bgr = cv2.imread(target_img_path)
 
     # Run Prediction or load cached result
@@ -440,6 +481,7 @@ def main():
             st.session_state['img_bgr'] = target_img_bgr
             st.session_state['user_temp'] = user_temp
             st.session_state['user_humidity'] = user_humidity
+            st.session_state['active_stage'] = sample_selected_stage if (src_tab != "Upload Custom Photo" and sample_selected_stage is not None) else res['predicted_stage']
 
     if 'prediction' not in st.session_state:
         st.info("Select or upload an avocado image to view the Freshness Report.")
@@ -453,7 +495,11 @@ def main():
     curr = storage['current_conditions']
     rec = storage['recommended_conditions']
 
-    freshness_val = int(round(res['quality_score_pct']))
+    # Stage-calibrated Freshness percentage matching user commercial grading brackets
+    active_stage = st.session_state.get('active_stage', res['predicted_stage'])
+    calibrated_quality = calibrate_freshness(active_stage, res['quality_score_pct'])
+
+    freshness_val = int(round(calibrated_quality))
     days_val = int(round(res['remaining_shelf_life_days']))
     rec_days_val = int(round(rec['estimated_rsl_days']))
     diff_days = int(round(rec['additional_days_gained']))
